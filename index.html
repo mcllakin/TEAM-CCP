@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAKAO THUMB AI — CCP</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-brand">KAKAO THUMB AI GENERATOR<br><span class="nav-brand-sub">From CCP</span></div>
+        <div class="nav-sections">
+            <span class="nav-number active" data-section="0">00</span>
+            <span class="nav-number" data-section="1">01</span>
+            <span class="nav-number" data-section="2">02</span>
+            <span class="nav-number" data-section="3">03</span>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" data-section="0">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    KAKAO THUMB AI GENERATOR<br>
+                    <span class="hero-subtitle-inline">From CCP</span>
+                </h1>
+                <p class="hero-meta">
+                    <span class="meta-line">CCP — CREATIVE COMPUTING PROJECT</span>
+                    <span class="meta-line">AI-POWERED IMAGE SYNTHESIS</span>
+                    <span class="meta-line">NANO BANANA PRO ENGINE</span>
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Upload Section -->
+    <section class="section upload-section" data-section="1">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">IMAGE<br>UPLOAD</h2>
+                <div class="section-number">01</div>
+            </div>
+
+            <div class="upload-grid">
+                <!-- Upload Box 1 -->
+                <div class="upload-box" data-upload="background">
+                    <div class="upload-number">001</div>
+                    <div class="upload-content">
+                        <label class="upload-label">
+                            Background Reference
+                            <span class="upload-sublabel">배경 레퍼런스</span>
+                        </label>
+                        <div class="upload-description">
+                            깨끗한 배경 또는 다른 제품이 있는 무드컷<br>
+                            (AI가 기존 제품을 자동 제거합니다)
+                        </div>
+                        <input type="file" id="upload-background" accept="image/*" hidden>
+                        <button class="upload-btn">
+                            <span>+ SELECT IMAGE</span>
+                        </button>
+                    </div>
+                    <div class="upload-preview" id="preview-background"></div>
+                </div>
+
+                <!-- Upload Box 2 -->
+                <div class="upload-box" data-upload="product">
+                    <div class="upload-number">002</div>
+                    <div class="upload-content">
+                        <label class="upload-label">
+                            Product Image
+                            <span class="upload-sublabel">제품 PNG</span>
+                        </label>
+                        <div class="upload-description">
+                            투명 배경이 포함된 제품 이미지<br>
+                            (PNG 형식 권장)
+                        </div>
+                        <input type="file" id="upload-product" accept="image/*" hidden>
+                        <button class="upload-btn">
+                            <span>+ SELECT IMAGE</span>
+                        </button>
+                    </div>
+                    <div class="upload-preview" id="preview-product"></div>
+                </div>
+
+                <!-- Upload Box 3 -->
+                <div class="upload-box" data-upload="composition">
+                    <div class="upload-number">003</div>
+                    <div class="upload-content">
+                        <label class="upload-label">
+                            Composition Reference
+                            <span class="upload-sublabel">구도 레퍼런스</span>
+                        </label>
+                        <div class="upload-description">
+                            포토샵에서 대충 합성한 구도 시안<br>
+                            (제품의 위치와 크기 참조용)
+                        </div>
+                        <input type="file" id="upload-composition" accept="image/*" hidden>
+                        <button class="upload-btn">
+                            <span>+ SELECT IMAGE</span>
+                        </button>
+                    </div>
+                    <div class="upload-preview" id="preview-composition"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Options Section -->
+    <section class="section options-section" data-section="2">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">GENERATION<br>OPTIONS</h2>
+                <div class="section-number">02</div>
+            </div>
+
+            <div class="options-grid">
+                <!-- Option 1: Mood Intensity -->
+                <div class="option-box">
+                    <label class="option-label">
+                        Mood Intensity
+                        <span class="option-sublabel">무드 보정 강도</span>
+                    </label>
+                    <div class="option-description">
+                        배경 분위기를 얼마나 강하게 적용할지 조절
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="mood-intensity" min="0" max="10" value="7">
+                        <div class="slider-value" id="mood-value">07</div>
+                    </div>
+                </div>
+
+                <!-- Option 2: Product Preservation -->
+                <div class="option-box">
+                    <label class="option-label">
+                        Product Preservation
+                        <span class="option-sublabel">제품 보존 강도</span>
+                    </label>
+                    <div class="option-description">
+                        제품 디테일을 얼마나 보존할지 조절
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="product-preservation" min="0" max="10" value="8">
+                        <div class="slider-value" id="product-value">08</div>
+                    </div>
+                </div>
+
+                <!-- Option 3: Resolution -->
+                <div class="option-box">
+                    <label class="option-label">
+                        Output Resolution
+                        <span class="option-sublabel">출력 해상도</span>
+                    </label>
+                    <div class="option-description">
+                        생성할 이미지의 해상도 선택
+                    </div>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="resolution" value="2k" checked>
+                            <span class="radio-label">2K — Fast Processing</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="resolution" value="4k">
+                            <span class="radio-label">4K — High Quality</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Generate Section -->
+    <section class="section generate-section" data-section="3">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">GENERATE<br>& RESULTS</h2>
+                <div class="section-number">03</div>
+            </div>
+
+            <div class="generate-content">
+                <div class="button-group">
+                    <button class="btn btn-primary" id="generate-single">
+                        <span class="btn-label">GENERATE 1×</span>
+                        <span class="btn-sublabel">단일 무드컷 생성</span>
+                    </button>
+                    <button class="btn btn-secondary" id="generate-batch">
+                        <span class="btn-label">GENERATE 4×</span>
+                        <span class="btn-sublabel">4가지 버전 배치 생성</span>
+                    </button>
+                </div>
+
+                <div class="results-container" id="results-container">
+                    <!-- Results will be injected here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">AI Processing</div>
+            <div class="loading-subtext">고품질 합성 처리 중...</div>
+            <div class="loading-team">TEAM CCP</div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
