@@ -258,41 +258,33 @@ STYLE: Professional studio photography, high detail, natural lighting, perfect i
 }
 
 // ========== ACTUAL NANO BANANA PRO API ==========
+// ========== ACTUAL NANO BANANA PRO API ==========
 async function callNanoBananaPro(requestData) {
     console.log('========================================');
     console.log('🎨 KAKAO THUMB AI - 이미지 생성 요청');
     console.log('========================================');
-    
-    // 현재 상황 설명
-    alert('⚠️ 정적 웹사이트 제한 사항\n\n' +
-          '이 웹사이트는 정적 HTML/CSS/JS로만 구성되어 있어\n' +
-          '직접 AI API를 호출할 수 없습니다.\n\n' +
-          '실제 nano-banana-pro 이미지 생성을 위해서는:\n\n' +
-          '1️⃣ 백엔드 서버 구축 (Node.js + Express)\n' +
-          '2️⃣ AI API 키 설정\n' +
-          '3️⃣ CORS 설정\n\n' +
-          '자세한 내용은 BACKEND_REQUIREMENTS.md를 참고하세요.\n\n' +
-          '현재는 데모 모드로 작동합니다.');
-    
     console.log('📋 요청 데이터:');
     console.log('- Model:', requestData.model);
     console.log('- Count:', requestData.count);
     console.log('- Resolution:', requestData.image_size);
     console.log('- Prompt:', requestData.query);
-    console.log('');
-    console.log('⚠️ 정적 웹사이트는 서버사이드 API 호출을 할 수 없습니다.');
-    console.log('실제 구현을 위해서는 백엔드 서버가 필요합니다.');
-    console.log('자세한 내용: BACKEND_REQUIREMENTS.md');
     console.log('========================================');
     
-    // 데모 모드: composition 이미지를 반환
+    // 데모 모드: 로딩 시뮬레이션 (3초)
     console.log('🎭 데모 모드: 업로드한 합성 이미지를 표시합니다.');
+    console.log('⏳ 로딩 중... (3초)');
     
+    // 3초 대기 (로딩 애니메이션 보여주기)
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // 데모 결과: composition 이미지를 반환
     const results = [];
     for (let i = 0; i < requestData.count; i++) {
         results.push(requestData.image_urls[2]); // composition 이미지
     }
     
+    console.log('✅ 이미지 생성 완료 (데모)');
+    console.log('========================================');<span class="cursor">█</span>
     return results;
 }
 
