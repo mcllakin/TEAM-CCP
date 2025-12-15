@@ -273,36 +273,57 @@ async function callNanoBananaPro(requestData) {
     // 데모 모드: 로딩 시뮬레이션 (3초)
     console.log('🎭 데모 모드: 업로드한 합성 이미지를 표시합니다.');
     console.log('⏳ 로딩 중... (3초)');
+   // ========== REPLICATE SDXL API ==========
+async function callNanoBananaPro(requestData) {
+    console.log('========================================');
+    console.log('🎨 KAKAO THUMB AI - Replicate SDXL 이미지 생성');
+    console.log('========================================');
+    console.log('📋 요청 데이터:');
+    console.log('- Model: Replicate SDXL');
+    console.log('- Count:', requestData.count);
+    console.log('- Resolution:', requestData.image_size);
+    console.log('- Prompt:', requestData.query);
+    console.log('========================================');
     
-    // 3초 대기 (로딩 애니메이션 보여주기)
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // 데모 결과: composition 이미지를 반환
-    const results = [];
-    for (let i = 0; i < requestData.count; i++) {
-        results.push(requestData.image_urls[2]); // composition 이미지
+    try {
+        // API 엔드포인트 호출
+        console.log('🚀 Replicate API 호출 중...');
+        
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                image_urls: requestData.image_urls,
+                query: requestData.query,
+                image_size: requestData.image_size,
+                count: requestData.count
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || '이미지 생성 실패');
+        }
+
+        console.log('✅ 이미지 생성 완료:', data.count, '개');
+        console.log('========================================');
+        
+        return data.images;
+
+    } catch (error) {
+        console.error('❌ API 호출 실패:', error);
+        throw error;
     }
-    
-    console.log('✅ 이미지 생성 완료 (데모)');
-    console.log('========================================');<span class="cursor">█</span>
-    return results;
 }
 
-// ========== DISPLAY RESULTS ==========
-function displayResults(images) {
-    const container = document.getElementById('results-container');
-    if (!container) return;
-    
-    // Clear previous results
-    container.innerHTML = '';
-    
-    // Add new results
-    images.forEach((imageUrl, index) => {
-        const item = document.createElement('div');
-        item.className = 'result-item';
-        
-        item.innerHTML = `
-            <img src="${imageUrl}" alt="Result ${index + 1}" class="result-image">
             <div class="result-actions">
                 <button class="result-btn" onclick="downloadImage('${imageUrl}', ${index + 1})">
                     DOWNLOAD
