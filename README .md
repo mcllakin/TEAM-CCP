@@ -13,6 +13,7 @@ Berlin Studio 미니멀리즘 디자인을 적용한 AI 이미지 생성 웹 인
 
 ---
 
+
 ## ✨ 특징
 
 - **Berlin Studio Aesthetic**: 초미니멀리즘 디자인
