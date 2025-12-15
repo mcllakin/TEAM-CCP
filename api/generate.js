@@ -1,6 +1,8 @@
 // ========================================
-// KAKAO THUMB AI - Replicate API Integration
-// Vercel Serverless Function
+// KAKAO THUMB AI - Multi-Step Replicate Pipeline
+// Step 1: Background Inpainting (제품 제거)
+// Step 2: Product ControlNet (윤곽 추출)
+// Step 3: Final Composition (자연스러운 합성)
 // ========================================
 
 const Replicate = require('replicate');
@@ -12,7 +14,7 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-    // OPTIONS 요청 처리 (CORS preflight)
+    // OPTIONS 요청 처리
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
@@ -22,8 +24,7 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).json({
             success: false,
-            error: 'Method not allowed',
-            message: 'Only POST requests are supported'
+            error: 'Method not allowed'
         });
     }
 
@@ -31,11 +32,10 @@ module.exports = async (req, res) => {
         // API 토큰 확인
         const replicateToken = process.env.REPLICATE_API_TOKEN;
         if (!replicateToken) {
-            console.error('❌ REPLICATE_API_TOKEN not found in environment variables');
+            console.error('❌ REPLICATE_API_TOKEN not found');
             return res.status(500).json({
                 success: false,
-                error: 'Server configuration error',
-                message: 'API token not configured'
+                error: 'API token not configured'
             });
         }
 
@@ -46,62 +46,120 @@ module.exports = async (req, res) => {
         if (!image_urls || !Array.isArray(image_urls) || image_urls.length !== 3) {
             return res.status(400).json({
                 success: false,
-                error: 'Invalid input',
-                message: '3개의 이미지가 필요합니다 (background, product, composition)'
+                error: '3개의 이미지가 필요합니다 (background, product, composition)'
             });
         }
 
-        console.log('🎨 이미지 생성 시작:', {
+        const [backgroundUrl, productUrl, compositionUrl] = image_urls;
+
+        console.log('🎨 3단계 파이프라인 시작:', {
             count,
             resolution: image_size,
-            prompt_length: query?.length || 0,
-            image_formats: image_urls.map((url, i) => `Image ${i+1}: ${url.substring(0, 30)}...`)
+            prompt_length: query?.length || 0
         });
 
         // Replicate 클라이언트 초기화
-        const replicate = new Replicate({
-            auth: replicateToken,
-        });
-
-        // Flux Pro 모델 사용 - img2img 모드 (최고 품질)
-        const model = "black-forest-labs/flux-pro";
+        const replicate = new Replicate({ auth: replicateToken });
 
         // 결과 배열
         const results = [];
 
-        // 각 이미지 생성 (순차 또는 병렬)
+        // ========================================
+        // 각 이미지 생성 (병렬 처리)
+        // ========================================
         const generationPromises = [];
 
         for (let i = 0; i < count; i++) {
-            // 프롬프트 개선 (제품 합성에 최적화)
-            const enhancedPrompt = `${query}
-
-Professional product photography, seamless composition, natural lighting integration, perfect shadows and reflections, photorealistic blend, high detail 8K, studio quality, commercial grade`;
-
-            // Flux Pro는 Data URI 직접 지원
-            const input = {
-                prompt: enhancedPrompt,
-                image: image_urls[2], // Composition 이미지를 베이스로 사용
-                strength: 0.75, // 원본 이미지 보존 강도 (높을수록 원본 유지)
-                guidance_scale: 3.5, // Flux Pro 최적값
-                num_inference_steps: 30, // 고품질을 위해 증가
-                aspect_ratio: "1:1", // 정사각형 출력
-                safety_tolerance: 2, // 안전 필터 수준
-                seed: Math.floor(Math.random() * 1000000) // 매번 다른 결과
-            };
-
-            // 병렬 실행을 위해 Promise 저장
             generationPromises.push(
-                replicate.run(model, { input })
-                    .then(output => {
-                        console.log(`✅ 이미지 ${i + 1}/${count} 생성 완료`);
-                        return Array.isArray(output) ? output[0] : output;
-                    })
-                    .catch(error => {
-                        console.error(`❌ 이미지 ${i + 1}/${count} 생성 실패:`, error.message || error);
+                (async () => {
+                    try {
+                        console.log(`\n📸 이미지 ${i + 1}/${count} 생성 시작`);
+
+                        // ========================================
+                        // STEP 1: Background Inpainting (제품 제거)
+                        // ========================================
+                        console.log(`  [Step 1/3] Background 제품 제거 중...`);
+                        
+                        const inpaintingModel = "stability-ai/stable-diffusion-inpainting";
+                        const cleanBackgroundOutput = await replicate.run(inpaintingModel, {
+                            input: {
+                                image: backgroundUrl,
+                                prompt: "empty background, remove all products, clean scene, natural lighting, photorealistic",
+                                negative_prompt: "products, objects, items, text, watermark",
+                                num_inference_steps: 25,
+                                guidance_scale: 7.5
+                            }
+                        });
+
+                        const cleanBackground = Array.isArray(cleanBackgroundOutput) 
+                            ? cleanBackgroundOutput[0] 
+                            : cleanBackgroundOutput;
+
+                        console.log(`  ✅ Step 1 완료: ${cleanBackground.substring(0, 50)}...`);
+
+                        // ========================================
+                        // STEP 2: Product ControlNet (윤곽 추출)
+                        // ========================================
+                        console.log(`  [Step 2/3] Product 윤곽 추출 중...`);
+                        
+                        const controlnetModel = "jagilley/controlnet-canny";
+                        const productEdgeOutput = await replicate.run(controlnetModel, {
+                            input: {
+                                image: productUrl,
+                                prompt: "product edge detection, clear outline, high contrast",
+                                structure: "canny"
+                            }
+                        });
+
+                        const productEdge = Array.isArray(productEdgeOutput) 
+                            ? productEdgeOutput[0] 
+                            : productEdgeOutput;
+
+                        console.log(`  ✅ Step 2 완료: ${productEdge.substring(0, 50)}...`);
+
+                        // ========================================
+                        // STEP 3: Final Composition (Flux Pro 합성)
+                        // ========================================
+                        console.log(`  [Step 3/3] 최종 합성 중 (Flux Pro)...`);
+
+                        const finalPrompt = `${query}
+
+Create a photorealistic product mood shot by:
+1. Using the clean background as the base scene
+2. Seamlessly integrating the product at the composition reference position
+3. Matching natural lighting, shadows, and reflections perfectly
+4. Adjusting color temperature to harmonize with the background atmosphere
+5. Maintaining ultra-high quality with no composite artifacts
+
+Style: Professional commercial photography, studio quality, 8K detail, natural integration`;
+
+                        const fluxModel = "black-forest-labs/flux-pro";
+                        const finalOutput = await replicate.run(fluxModel, {
+                            input: {
+                                prompt: finalPrompt,
+                                image: compositionUrl, // 구도 참조
+                                strength: 0.65, // 구도는 참고만
+                                guidance_scale: 3.5,
+                                num_inference_steps: 35,
+                                aspect_ratio: "1:1",
+                                safety_tolerance: 2,
+                                seed: Math.floor(Math.random() * 1000000)
+                            }
+                        });
+
+                        const finalImage = Array.isArray(finalOutput) ? finalOutput[0] : finalOutput;
+
+                        console.log(`  ✅ Step 3 완료: ${finalImage.substring(0, 50)}...`);
+                        console.log(`✅ 이미지 ${i + 1}/${count} 생성 완료!\n`);
+
+                        return finalImage;
+
+                    } catch (error) {
+                        console.error(`❌ 이미지 ${i + 1}/${count} 생성 실패:`, error.message);
                         console.error('Error details:', JSON.stringify(error, null, 2));
                         return null;
-                    })
+                    }
+                })()
             );
         }
 
@@ -112,7 +170,7 @@ Professional product photography, seamless composition, natural lighting integra
         const successfulImages = generatedImages.filter(img => img !== null);
 
         if (successfulImages.length === 0) {
-            console.error('❌ 모든 이미지 생성 실패. 마지막 에러 확인 필요');
+            console.error('❌ 모든 이미지 생성 실패');
             throw new Error('모든 이미지 생성 실패. Replicate API 에러를 확인하세요.');
         }
 
@@ -123,14 +181,13 @@ Professional product photography, seamless composition, natural lighting integra
             success: true,
             images: successfulImages,
             count: successfulImages.length,
-            model: 'Flux Pro',
-            message: `${successfulImages.length}개의 이미지가 생성되었습니다`
+            model: '3-Step Pipeline (Inpainting + ControlNet + Flux Pro)',
+            message: `${successfulImages.length}개의 고품질 합성 이미지가 생성되었습니다`
         });
 
     } catch (error) {
         console.error('❌ 서버 에러:', error);
 
-        // 에러 응답
         return res.status(500).json({
             success: false,
             error: 'Generation failed',
