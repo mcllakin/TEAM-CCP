@@ -1,6 +1,6 @@
 // ========================================
-// KAKAO THUMB AI - SDXL img2img Pipeline
-// 3-Image Fusion: Background + Product + Composition
+// KAKAO THUMB AI - Flux Dev img2img Pipeline
+// High-Quality 3-Image Fusion
 // ========================================
 
 const Replicate = require('replicate');
@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
 
         const [backgroundUrl, productUrl, compositionUrl] = image_urls;
 
-        console.log('🎨 SDXL img2img 파이프라인 시작:', {
+        console.log('🎨 Flux Dev img2img 파이프라인 시작:', {
             count,
             resolution: image_size,
             prompt_length: query?.length || 0
@@ -53,8 +53,8 @@ module.exports = async (req, res) => {
 
         const replicate = new Replicate({ auth: replicateToken });
 
-        // SDXL img2img 모델
-        const sdxlModel = "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b";
+        // Flux Dev 모델 (img2img 지원!)
+        const fluxDevModel = "black-forest-labs/flux-dev";
 
         // ========================================
         // 병렬 생성
@@ -68,76 +68,84 @@ module.exports = async (req, res) => {
                         console.log(`\n📸 이미지 ${i + 1}/${count} 생성 시작`);
 
                         // ========================================
-                        // 상세한 프롬프트 구성
+                        // 초강력 프롬프트 구성
                         // ========================================
                         
-                        // Composition Reference를 베이스로 사용
-                        const baseImage = compositionUrl;
+                        const masterPrompt = `Professional product mood shot creation:
 
-                        // 프롬프트 구성
-                        const detailedPrompt = `${query}
+REFERENCE IMAGES PROVIDED:
+1. Background Reference: Natural lighting environment with warm wood tones
+2. Product Reference: SUNSHINE cosmetic jar with silver metallic finish
+3. Composition Reference: Product placement and spatial arrangement guide
 
-PRODUCT MOOD SHOT REQUIREMENTS:
+SYNTHESIS INSTRUCTIONS:
 
-COMPOSITION (Reference Image #3):
-- Follow the exact product placement and angle from the composition reference
-- Maintain the spatial layout and perspective
-- Keep the product positioning and scale
+STEP 1 - ANALYZE COMPOSITION REFERENCE (Image #3):
+- Extract exact product position, angle, and scale
+- Identify spatial relationships and perspective
+- Maintain the overall layout structure
+- Preserve the depth and dimensional arrangement
 
-BACKGROUND ATMOSPHERE (Reference Image #1):
-- Extract and apply the lighting mood from the background reference
-- Match the color temperature and ambient tone
-- Replicate the lighting direction and intensity
-- Maintain the background's atmospheric quality
+STEP 2 - EXTRACT BACKGROUND ATMOSPHERE (Image #1):
+- Capture the warm wood texture and color palette
+- Analyze lighting direction: soft, diffused from above
+- Note the ambient color temperature: warm neutral tones
+- Identify shadow characteristics: soft, subtle gradients
 
-PRODUCT INTEGRATION (Reference Image #2):
-- Seamlessly place the product into the scene
-- Generate natural shadows that match the lighting direction
-- Add realistic reflections on product surfaces
-- Blend product edges naturally with the background
-- Maintain product details and form accurately
+STEP 3 - INTEGRATE PRODUCT (Image #2 - SUNSHINE jar):
+- Place the exact SUNSHINE cosmetic jar from the reference
+- Maintain silver metallic finish and cylindrical form
+- Preserve all product text and branding details
+- Keep the white cap and silver body distinction
 
 LIGHTING & SHADOWS:
-- Shadows must match background lighting angle
-- Natural shadow softness and gradient
-- Realistic ambient occlusion around product base
-- Color temperature consistency throughout
+- Match the soft, diffused lighting from Background Reference
+- Generate natural shadows consistent with light direction
+- Create subtle reflections on the metallic silver surface
+- Add warm ambient light bounce from wood background
+- Ensure shadow softness matches the reference lighting style
 
-QUALITY REQUIREMENTS:
-- Professional commercial photography standard
-- Photorealistic rendering with high detail
-- No composite artifacts or visible seams
-- Natural depth and dimensionality
-- Studio-quality finish
+COLOR & ATMOSPHERE:
+- Harmonize product silver tones with warm wood background
+- Maintain color temperature consistency throughout
+- Preserve the luxurious, high-end product photography aesthetic
+- Create depth through subtle tonal variations
 
-Style: Professional product photography, natural lighting, seamless integration, commercial grade, 8K detail`;
+TECHNICAL QUALITY:
+- Ultra-high resolution commercial photography standard
+- Sharp product details with natural depth of field
+- Seamless integration with no composite artifacts
+- Professional studio lighting quality
+- Magazine-worthy final output
 
-                        const negativePrompt = "low quality, blurry, distorted, artifacts, unnatural shadows, harsh composite lines, pixelated, watermark, text, logo, unrealistic lighting, poor integration, visible seams, artificial look";
+${query}
 
-                        // SDXL img2img 실행
-                        const output = await replicate.run(sdxlModel, {
+Final result: A photorealistic product mood shot of the SUNSHINE cosmetic jar on warm wood background, with perfect lighting integration and commercial photography quality.`;
+
+                        const negativePrompt = "low quality, blurry, distorted, wrong product, different product, text errors, unrealistic shadows, harsh lighting, artificial composite, visible seams, pixelated, watermark, amateur photography, color mismatch, poor integration, deformed product, wrong colors";
+
+                        // Flux Dev img2img 실행
+                        const output = await replicate.run(fluxDevModel, {
                             input: {
-                                image: baseImage, // Composition을 베이스로 사용
-                                prompt: detailedPrompt,
-                                negative_prompt: negativePrompt,
-                                strength: 0.75, // 원본 구도 75% 보존
-                                guidance_scale: 8.0, // 프롬프트 충실도
-                                num_inference_steps: 50, // 고품질
-                                scheduler: "DPMSolverMultistep",
-                                refine: "expert_ensemble_refiner",
-                                high_noise_frac: 0.8,
+                                prompt: masterPrompt,
+                                image: compositionUrl, // Composition을 베이스로 사용
+                                prompt_strength: 0.80, // 프롬프트 강도
+                                num_inference_steps: 28, // Flux Dev 최적값
+                                guidance_scale: 3.5, // Flux 최적값
+                                output_format: "png",
+                                output_quality: 100,
                                 seed: Math.floor(Math.random() * 1000000)
                             }
                         });
 
                         const finalImage = Array.isArray(output) ? output[0] : output;
                         
-                        console.log(`✅ 이미지 ${i + 1}/${count} 생성 완료!`);
+                        console.log(`  ✅ 이미지 ${i + 1}/${count} 생성 완료!`);
                         return finalImage;
 
                     } catch (error) {
-                        console.error(`❌ 이미지 ${i + 1}/${count} 실패:`, error.message);
-                        console.error('Error details:', JSON.stringify(error, null, 2));
+                        console.error(`  ❌ 이미지 ${i + 1}/${count} 실패:`, error.message);
+                        console.error('  Error details:', JSON.stringify(error, null, 2));
                         return null;
                     }
                 })()
@@ -153,14 +161,14 @@ Style: Professional product photography, natural lighting, seamless integration,
             throw new Error('이미지 생성 실패');
         }
 
-        console.log(`🎉 총 ${successfulImages.length}/${count}개 완료`);
+        console.log(`\n🎉 총 ${successfulImages.length}/${count}개 완료`);
 
         return res.status(200).json({
             success: true,
             images: successfulImages,
             count: successfulImages.length,
-            model: 'SDXL img2img (3-Image Fusion)',
-            message: `${successfulImages.length}개의 이미지 생성 완료`
+            model: 'Flux Dev img2img (High-Quality Pipeline)',
+            message: `${successfulImages.length}개의 고품질 이미지 생성 완료`
         });
 
     } catch (error) {
