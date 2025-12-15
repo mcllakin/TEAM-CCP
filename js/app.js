@@ -86,44 +86,78 @@ function initializeUploads() {
         });
         
         input.addEventListener('change', (e) => {
-            console.log('📁 File input changed:', type);
-            const file = e.target.files[0];
-            if (!file) {
-                console.log('⚠️ No file selected');
-                return;
+    console.log('📁 File input changed:', type);
+    const file = e.target.files[0];
+    if (!file) {
+        console.log('⚠️ No file selected');
+        return;
+    }
+    
+    console.log('📄 File:', file.name, file.type, file.size);
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        alert('이미지 파일만 업로드 가능합니다.');
+        return;
+    }
+    
+    // Validate file size (5MB for Base64 encoding)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('파일 크기는 5MB 이하여야 합니다.\n더 작은 이미지를 사용하거나 압축해주세요.');
+        return;
+    }
+    
+    console.log('⏳ Reading and resizing file...');
+    
+    // Read and resize image
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+            // Resize image if too large
+            const maxWidth = 1024;
+            const maxHeight = 1024;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxWidth || height > maxHeight) {
+                if (width > height) {
+                    height = (height / width) * maxWidth;
+                    width = maxWidth;
+                } else {
+                    width = (width / height) * maxHeight;
+                    height = maxHeight;
+                }
             }
             
-            console.log('📄 File:', file.name, file.type, file.size);
+            // Create canvas and resize
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
             
-            // Validate file type
-            if (!file.type.startsWith('image/')) {
-                alert('이미지 파일만 업로드 가능합니다.');
-                return;
-            }
+            // Convert to base64 with compression
+            const resizedBase64 = canvas.toDataURL('image/jpeg', 0.8);
             
-            // Validate file size (50MB)
-            if (file.size > 50 * 1024 * 1024) {
-                alert('파일 크기는 50MB 이하여야 합니다.');
-                return;
-            }
+            console.log('Original size:', file.size, 'bytes');
+            console.log('Resized base64 length:', resizedBase64.length, 'chars');
             
-            console.log('⏳ Reading file...');
+            state.images[type] = resizedBase64;
+            preview.style.backgroundImage = `url(${resizedBase64})`;
+            box.classList.add('has-image');
             
-            // Read and display image
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                state.images[type] = event.target.result;
-                preview.style.backgroundImage = `url(${event.target.result})`;
-                box.classList.add('has-image');
-                
-                console.log(`✅ ${type} 이미지 업로드 완료`);
-            };
-            reader.onerror = (error) => {
-                console.error('❌ File read error:', error);
-                alert('파일 읽기 실패: ' + error);
-            };
-            reader.readAsDataURL(file);
-        });
+            console.log(`✅ ${type} 이미지 업로드 완료 (리사이즈됨)`);
+        };
+        img.src = event.target.result;
+    };
+    reader.onerror = (error) => {
+        console.error('❌ File read error:', error);
+        alert('파일 읽기 실패: ' + error);
+    };
+    reader.readAsDataURL(file);
+});
+
         
         // Add drag & drop
         box.addEventListener('dragover', (e) => {
