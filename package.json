@@ -1,0 +1,16 @@
+{
+  "name": "kakao-thumb-ai",
+  "version": "1.0.0",
+  "description": "KAKAO THUMB AI - Product Mood Shot Generator with Replicate SDXL",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "replicate": "^0.25.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
