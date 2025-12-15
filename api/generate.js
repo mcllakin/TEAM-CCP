@@ -54,7 +54,8 @@ module.exports = async (req, res) => {
         console.log('🎨 이미지 생성 시작:', {
             count,
             resolution: image_size,
-            prompt_length: query?.length || 0
+            prompt_length: query?.length || 0,
+            image_formats: image_urls.map((url, i) => `Image ${i+1}: ${url.substring(0, 30)}...`)
         });
 
         // Replicate 클라이언트 초기화
@@ -62,8 +63,8 @@ module.exports = async (req, res) => {
             auth: replicateToken,
         });
 
-        // SDXL 모델 사용 - img2img 모드
-        const model = "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b";
+        // Flux Pro 모델 사용 - img2img 모드 (최고 품질)
+        const model = "black-forest-labs/flux-pro";
 
         // 결과 배열
         const results = [];
@@ -77,12 +78,15 @@ module.exports = async (req, res) => {
 
 Professional product photography, seamless composition, natural lighting integration, perfect shadows and reflections, photorealistic blend, high detail 8K, studio quality, commercial grade`;
 
+            // Flux Pro는 Data URI 직접 지원
             const input = {
                 prompt: enhancedPrompt,
-                image: image_urls[2], // composition 이미지를 베이스로 사용
-                strength: 0.6, // 원본 이미지 보존 강도 (0.6 = 40% 변경)
-                guidance_scale: 7.5,
-                num_inference_steps: 30,
+                image: image_urls[2], // Composition 이미지를 베이스로 사용
+                strength: 0.75, // 원본 이미지 보존 강도 (높을수록 원본 유지)
+                guidance_scale: 3.5, // Flux Pro 최적값
+                num_inference_steps: 30, // 고품질을 위해 증가
+                aspect_ratio: "1:1", // 정사각형 출력
+                safety_tolerance: 2, // 안전 필터 수준
                 seed: Math.floor(Math.random() * 1000000) // 매번 다른 결과
             };
 
@@ -94,7 +98,8 @@ Professional product photography, seamless composition, natural lighting integra
                         return Array.isArray(output) ? output[0] : output;
                     })
                     .catch(error => {
-                        console.error(`❌ 이미지 ${i + 1}/${count} 생성 실패:`, error);
+                        console.error(`❌ 이미지 ${i + 1}/${count} 생성 실패:`, error.message || error);
+                        console.error('Error details:', JSON.stringify(error, null, 2));
                         return null;
                     })
             );
@@ -107,7 +112,8 @@ Professional product photography, seamless composition, natural lighting integra
         const successfulImages = generatedImages.filter(img => img !== null);
 
         if (successfulImages.length === 0) {
-            throw new Error('모든 이미지 생성 실패');
+            console.error('❌ 모든 이미지 생성 실패. 마지막 에러 확인 필요');
+            throw new Error('모든 이미지 생성 실패. Replicate API 에러를 확인하세요.');
         }
 
         console.log(`🎉 총 ${successfulImages.length}/${count}개 이미지 생성 완료`);
@@ -117,7 +123,7 @@ Professional product photography, seamless composition, natural lighting integra
             success: true,
             images: successfulImages,
             count: successfulImages.length,
-            model: 'SDXL',
+            model: 'Flux Pro',
             message: `${successfulImages.length}개의 이미지가 생성되었습니다`
         });
 
