@@ -122,58 +122,97 @@ module.exports = async (req, res) => {
             try {
                 console.log(`\n📸 [${i + 1}/${count}] 생성 시작`);
 
-                // 상세 프롬프트
-                const masterPrompt = `Professional product photography mood shot:
+                // 초강력 프롬프트 (배경/제품/구도 최대 보존)
+                const masterPrompt = `CRITICAL REFERENCE-BASED PRODUCT PHOTOGRAPHY COMPOSITION:
 
-Create a high-quality commercial product photograph by combining three reference images:
+YOU MUST PRESERVE 90% OF THE REFERENCE IMAGES. DO NOT CREATE NEW ELEMENTS.
 
-BACKGROUND REFERENCE (Image 1):
-- Extract the warm wood texture and natural grain pattern
-- Capture the soft, diffused lighting from above
-- Maintain the ambient color temperature and warm tones
-- Preserve the luxurious, natural material aesthetic
+═══════════════════════════════════════════════════════════
+IMAGE 1 - BACKGROUND REFERENCE (PRESERVE 90%):
+═══════════════════════════════════════════════════════════
+MANDATORY REQUIREMENTS:
+✓ EXACTLY replicate the wood grain texture and pattern from Image 1
+✓ PRESERVE the specific wood color: warm honey-brown tones
+✓ MAINTAIN the exact surface texture: natural wood grain lines
+✓ KEEP the lighting angle and intensity IDENTICAL to Image 1
+✓ DO NOT change background material - MUST be natural wood
+✓ DO NOT add new background elements
+✓ MATCH shadow patterns and ambient lighting from Image 1
 
-PRODUCT REFERENCE (Image 2):
-- Exact product: SUNSHINE cosmetic jar
-- Maintain transparent glass body with natural reflections
-- Preserve white cap on top
-- Keep the silver/chrome metallic label band
-- Match all product proportions and dimensions exactly
-- Preserve "SUNSHINE" branding text accurately
+═══════════════════════════════════════════════════════════
+IMAGE 2 - PRODUCT REFERENCE (PRESERVE 95%):
+═══════════════════════════════════════════════════════════
+CRITICAL PRODUCT SPECIFICATIONS:
+✓ PRODUCT NAME: "SUNSHINE" - MUST appear on jar
+✓ EXACT SHAPE: Cylindrical cosmetic jar with rounded edges
+✓ EXACT MATERIALS: 
+  - Body: TRANSPARENT GLASS (see-through, crystal clear)
+  - Cap: WHITE plastic dome top
+  - Label band: SILVER/CHROME metallic ring
+✓ EXACT COLORS:
+  - Glass body: TRANSPARENT with slight reflections
+  - Cap: PURE WHITE (not cream, not off-white)
+  - Label: SILVER metallic (not gold, not bronze)
+✓ EXACT PROPORTIONS: Use the EXACT height-to-width ratio from Image 2
+✓ EXACT TEXT: "SUNSHINE" branding MUST be visible and legible
+✓ DO NOT change product shape to rounded or bowl-like
+✓ DO NOT change glass to opaque or colored material
+✓ DO NOT change silver to gold/bronze/copper tones
 
-COMPOSITION REFERENCE (Image 3):
-- Follow the exact product placement and position
-- Match the camera angle and perspective
-- Maintain the spatial arrangement
-- Preserve depth and dimensional relationships
+═══════════════════════════════════════════════════════════
+IMAGE 3 - COMPOSITION REFERENCE (PRESERVE 85%):
+═══════════════════════════════════════════════════════════
+POSITIONING REQUIREMENTS:
+✓ EXACT PLACEMENT: Position product at the SAME location as Image 3
+✓ EXACT ANGLE: Use the SAME camera angle and viewing perspective
+✓ EXACT DISTANCE: Match the product-to-camera distance from Image 3
+✓ EXACT ORIENTATION: Product facing direction MUST match Image 3
+✓ DO NOT move product to different position
+✓ DO NOT change camera angle or perspective
 
-INTEGRATION REQUIREMENTS:
-- Seamlessly blend the SUNSHINE jar into the wood background
-- Generate natural shadows matching the lighting direction
-- Add subtle reflections on the glass surface from the environment
-- Ensure perfect color harmony between product and background
-- Create realistic ambient occlusion at the product base
-- Match shadow softness and light falloff naturally
+═══════════════════════════════════════════════════════════
+LIGHTING & SHADOW INTEGRATION:
+═══════════════════════════════════════════════════════════
+✓ Shadows MUST match the natural lighting direction from Image 1
+✓ Shadow softness MUST replicate Image 1's ambient light quality
+✓ Glass reflections MUST show wood texture from background
+✓ Ambient occlusion at product base MUST be natural and subtle
+✓ Color temperature MUST remain consistent with Image 1 (warm tones)
 
-QUALITY STANDARDS:
-- Professional commercial photography grade
-- Ultra-high resolution with sharp details
-- Natural depth of field with gentle background blur
-- Magazine-quality output suitable for e-commerce
-- No composite artifacts or visible seams
-- Photorealistic rendering throughout
+═══════════════════════════════════════════════════════════
+ABSOLUTE PROHIBITIONS (DO NOT DO):
+═══════════════════════════════════════════════════════════
+✗ DO NOT change product shape from cylindrical to rounded/bowl
+✗ DO NOT change transparent glass to opaque/colored materials
+✗ DO NOT change silver label to gold/bronze/copper/rose gold
+✗ DO NOT change white cap to cream/beige/colored cap
+✗ DO NOT change wood background to stone/concrete/fabric
+✗ DO NOT add decorative objects not present in references
+✗ DO NOT change "SUNSHINE" text to other words
+✗ DO NOT create artistic/stylized interpretations
+✗ DO NOT add glowing effects or unnatural lighting
 
 ${query}
 
-Output: A photorealistic product mood shot of the SUNSHINE cosmetic jar on warm wood background with perfect lighting and shadow integration.`;
+FINAL OUTPUT REQUIREMENTS:
+- Photorealistic commercial product photography
+- SUNSHINE jar with EXACT specifications from Image 2
+- Positioned EXACTLY as shown in Image 3
+- Background EXACTLY matching Image 1's wood texture
+- Natural lighting integration with realistic shadows
+- Professional e-commerce quality suitable for luxury cosmetics
+- Zero artistic interpretation - STRICT reference adherence
 
-                // Ideogram V2 Turbo 실행
+YOU ARE CREATING A REFERENCE-ACCURATE PRODUCT PHOTOGRAPH, NOT AN ARTISTIC INTERPRETATION.`;
+
+                // Ideogram V2 Turbo 실행 (강력한 설정)
                 const output = await replicate.run(ideogramModel, {
                     input: {
                         prompt: masterPrompt,
+                        negative_prompt: "artistic interpretation, stylized, abstract, different product, wrong colors, gold jar, bronze jar, copper jar, rose gold, opaque glass, colored glass, rounded jar, bowl shape, vase shape, cream cap, beige cap, colored cap, stone background, concrete background, marble background, fabric background, decorative objects, props, flowers, leaves, fantasy elements, glowing effects, neon lights, bokeh lights, unrealistic, cartoon, anime, painting, sketch, watercolor, low quality, blurry, distorted, deformed product, wrong text, no SUNSHINE text, different branding, wrong product shape",
                         image_file: compositionUrl,
                         style_type: "Realistic",
-                        magic_prompt_option: "Auto",
+                        magic_prompt_option: "Off",
                         aspect_ratio: "1:1",
                         output_format: "png",
                         seed: Math.floor(Math.random() * 2147483647)
@@ -211,7 +250,7 @@ Output: A photorealistic product mood shot of the SUNSHINE cosmetic jar on warm 
             success: true,
             images: successfulImages,
             count: successfulImages.length,
-            model: 'Ideogram V2 Turbo (Best Quality)',
+            model: 'Ideogram V2 Turbo (Ultra Strong Prompt)',
             message: `${successfulImages.length}개의 최고 품질 이미지 생성 완료`
         });
 
