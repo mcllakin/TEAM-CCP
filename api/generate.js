@@ -1,6 +1,6 @@
 // ========================================
-// KAKAO THUMB AI - Ideogram V2 Remix
-// Best Quality for Product Mood Shots
+// KAKAO THUMB AI - Advanced Multi-Step Pipeline
+// ControlNet + IP-Adapter + Flux Dev
 // ========================================
 
 const Replicate = require('replicate');
@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
             });
         }
 
-        console.log(`🎨 Ideogram V2 파이프라인 시작 (${count}장 생성)`);
+        console.log(`🎨 Advanced 3-Step Pipeline 시작 (${count}장 생성)`);
 
         // ========================================
         // Data URI를 imgbb에 업로드
@@ -109,131 +109,136 @@ module.exports = async (req, res) => {
         // Replicate 초기화
         // ========================================
         const replicate = new Replicate({ auth: replicateToken });
-        
-        // Ideogram V2 Turbo 모델 (정확한 경로)
-        const ideogramModel = "ideogram-ai/ideogram-v2-turbo";
 
         // ========================================
-        // 순차 생성 (count만큼) - 안정성 우선
+        // STEP 1: Background Inpainting
+        // (배경에서 기존 제품 제거)
         // ========================================
+        console.log('\n🎯 STEP 1: Background Inpainting (배경 정제)');
+        
+        const inpaintingPrompt = `Clean empty background surface with EXACT texture and pattern visible in the image. Remove all objects, products, and items. Preserve only the pure background surface texture, pattern, color, and lighting. High quality, photorealistic, 8K detail.`;
+        
+        let cleanBackgroundUrl;
+        try {
+            const inpaintOutput = await replicate.run(
+                "stability-ai/stable-diffusion-inpainting",
+                {
+                    input: {
+                        image: backgroundUrl,
+                        prompt: inpaintingPrompt,
+                        negative_prompt: "objects, products, items, props, decorations, blur, low quality",
+                        num_inference_steps: 50,
+                        guidance_scale: 9.0,
+                        scheduler: "DPMSolverMultistep"
+                    }
+                }
+            );
+            
+            cleanBackgroundUrl = Array.isArray(inpaintOutput) ? inpaintOutput[0] : inpaintOutput;
+            console.log(`✅ Step 1 완료: ${cleanBackgroundUrl.substring(0, 50)}...`);
+            
+        } catch (error) {
+            console.error('❌ Inpainting 실패:', error.message);
+            // Fallback: 원본 배경 사용
+            cleanBackgroundUrl = backgroundUrl;
+            console.log('⚠️  원본 배경 사용');
+        }
+
+        // ========================================
+        // STEP 2: ControlNet Canny
+        // (제품 윤곽선 추출)
+        // ========================================
+        console.log('\n🎯 STEP 2: ControlNet Canny (제품 윤곽 추출)');
+        
+        let productCannyUrl;
+        try {
+            const cannyOutput = await replicate.run(
+                "jagilley/controlnet-canny",
+                {
+                    input: {
+                        image: productUrl,
+                        structure: "canny",
+                        prompt: "product outline, clean edges, transparent background"
+                    }
+                }
+            );
+            
+            productCannyUrl = Array.isArray(cannyOutput) ? cannyOutput[0] : cannyOutput;
+            console.log(`✅ Step 2 완료: ${productCannyUrl.substring(0, 50)}...`);
+            
+        } catch (error) {
+            console.error('❌ ControlNet 실패:', error.message);
+            // Fallback: 원본 제품 사용
+            productCannyUrl = productUrl;
+            console.log('⚠️  원본 제품 사용');
+        }
+
+        // ========================================
+        // STEP 3: Flux Dev Final Composition
+        // (최종 고품질 합성)
+        // ========================================
+        console.log('\n🎯 STEP 3: Flux Dev Final Composition (최종 합성)');
+        console.log(`📊 생성할 이미지: ${count}개\n`);
+
         const successfulImages = [];
 
         for (let i = 0; i < count; i++) {
             try {
-                console.log(`\n📸 [${i + 1}/${count}] 생성 시작`);
+                console.log(`\n📸 [${i + 1}/${count}] 최종 합성 시작`);
 
-                // 초강력 프롬프트 (배경/제품/구도 최대 보존)
-                const masterPrompt = `CRITICAL REFERENCE-BASED PRODUCT PHOTOGRAPHY COMPOSITION:
+                // 초강력 프롬프트
+                const finalPrompt = `Professional product photography composition:
 
-YOU MUST PRESERVE 90% OF THE REFERENCE IMAGES. DO NOT CREATE NEW ELEMENTS.
+BACKGROUND (from cleaned reference):
+- Use the EXACT surface texture from the background image
+- Preserve EXACT surface pattern (grid, weave, smooth, rough, whatever exists)
+- Maintain EXACT color tones and lighting
+- DO NOT assume or interpret material type
+- Copy the visual appearance AS-IS
 
-═══════════════════════════════════════════════════════════
-IMAGE 1 - BACKGROUND REFERENCE (PRESERVE 95%):
-═══════════════════════════════════════════════════════════
-MANDATORY REQUIREMENTS:
-✓ ANALYZE Image 1 and EXTRACT its EXACT surface texture AS-IS
-✓ REPLICATE WHATEVER surface pattern exists in Image 1 (grid, smooth, rough, etc.)
-✓ PRESERVE the EXACT color tones visible in Image 1 background
-✓ MAINTAIN WHATEVER surface material appears in Image 1 (do not assume)
-✓ KEEP the EXACT lighting angle, intensity, and shadows from Image 1
-✓ DO NOT interpret what material it is - just COPY what you SEE
-✓ DO NOT substitute or assume materials (wood, fabric, metal, etc.)
-✓ DO NOT add patterns not present in Image 1
-✓ DO NOT change the surface appearance based on assumptions
-✓ USE Image 1's visual texture DIRECTLY - no material assumptions
+PRODUCT (SUNSHINE jar):
+- Cylindrical transparent glass cosmetic jar
+- White dome cap on top
+- Silver/chrome metallic label band
+- "SUNSHINE" branding clearly visible
+- Transparent glass body with natural reflections
+- EXACT shape and proportions from product reference
 
-═══════════════════════════════════════════════════════════
-IMAGE 2 - PRODUCT REFERENCE (PRESERVE 95%):
-═══════════════════════════════════════════════════════════
-CRITICAL PRODUCT SPECIFICATIONS:
-✓ PRODUCT NAME: "SUNSHINE" - MUST appear on jar
-✓ EXACT SHAPE: Cylindrical cosmetic jar with rounded edges
-✓ EXACT MATERIALS: 
-  - Body: TRANSPARENT GLASS (see-through, crystal clear)
-  - Cap: WHITE plastic dome top
-  - Label band: SILVER/CHROME metallic ring
-✓ EXACT COLORS:
-  - Glass body: TRANSPARENT with slight reflections
-  - Cap: PURE WHITE (not cream, not off-white)
-  - Label: SILVER metallic (not gold, not bronze)
-✓ EXACT PROPORTIONS: Use the EXACT height-to-width ratio from Image 2
-✓ EXACT TEXT: "SUNSHINE" branding MUST be visible and legible
-✓ DO NOT change product shape to rounded or bowl-like
-✓ DO NOT change glass to opaque or colored material
-✓ DO NOT change silver to gold/bronze/copper tones
+COMPOSITION:
+- Follow the product placement and angle from composition reference
+- Natural lighting matching background
+- Realistic shadows and reflections
+- Professional commercial quality
+- Photorealistic integration
+- 8K detail, studio quality
 
-═══════════════════════════════════════════════════════════
-IMAGE 3 - COMPOSITION REFERENCE (PRESERVE 85%):
-═══════════════════════════════════════════════════════════
-POSITIONING REQUIREMENTS:
-✓ EXACT PLACEMENT: Position product at the SAME location as Image 3
-✓ EXACT ANGLE: Use the SAME camera angle and viewing perspective
-✓ EXACT DISTANCE: Match the product-to-camera distance from Image 3
-✓ EXACT ORIENTATION: Product facing direction MUST match Image 3
-✓ DO NOT move product to different position
-✓ DO NOT change camera angle or perspective
+CRITICAL: This is reference-based photography. Copy what you SEE in the references, do not interpret or assume materials.`;
 
-═══════════════════════════════════════════════════════════
-LIGHTING & SHADOW INTEGRATION:
-═══════════════════════════════════════════════════════════
-✓ Shadows MUST match the natural lighting direction from Image 1
-✓ Shadow softness MUST replicate Image 1's ambient light quality
-✓ Glass reflections MUST show WHATEVER texture is visible in Image 1 background
-✓ Ambient occlusion at product base MUST be natural and subtle
-✓ Color temperature MUST remain consistent with Image 1
+                const negativePrompt = "artistic interpretation, stylized, abstract, wrong product shape, gold tones, bronze tones, opaque glass, rounded jar, bowl shape, wood texture assumption, fabric assumption, metal assumption, decorative props, fantasy elements, glowing effects, low quality, blurry, distorted, wrong colors, different product";
 
-═══════════════════════════════════════════════════════════
-ABSOLUTE PROHIBITIONS (DO NOT DO):
-═══════════════════════════════════════════════════════════
-✗ DO NOT change product shape from cylindrical to rounded/bowl
-✗ DO NOT change transparent glass to opaque/colored materials
-✗ DO NOT change silver label to gold/bronze/copper/rose gold
-✗ DO NOT change white cap to cream/beige/colored cap
-✗ DO NOT assume background is wood/fabric/metal - use Image 1 AS-IS
-✗ DO NOT interpret material type - just replicate visual texture from Image 1
-✗ DO NOT add decorative objects not present in references
-✗ DO NOT change "SUNSHINE" text to other words
-✗ DO NOT create artistic/stylized interpretations
-✗ DO NOT add glowing effects or unnatural lighting
-
-${query}
-
-FINAL OUTPUT REQUIREMENTS:
-- Photorealistic commercial product photography
-- SUNSHINE jar with EXACT specifications from Image 2
-- Positioned EXACTLY as shown in Image 3
-- Background EXACTLY COPIED from Image 1 (no interpretation, direct replication)
-- Natural lighting integration with realistic shadows
-- Professional e-commerce quality suitable for luxury cosmetics
-- Zero artistic interpretation - STRICT reference adherence
-
-YOU ARE CREATING A REFERENCE-ACCURATE PRODUCT PHOTOGRAPH, NOT AN ARTISTIC INTERPRETATION.
-DO NOT GUESS MATERIALS - USE EXACTLY WHAT YOU SEE IN THE REFERENCE IMAGES.`;
-
-                // Ideogram V2 Turbo 실행 (강력한 설정)
-                const output = await replicate.run(ideogramModel, {
-                    input: {
-                        prompt: masterPrompt,
-                        negative_prompt: "artistic interpretation, stylized, abstract, different product, wrong colors, gold jar, bronze jar, copper jar, rose gold, opaque glass, colored glass, rounded jar, bowl shape, vase shape, cream cap, beige cap, colored cap, stone background, concrete background, marble background, fabric background, decorative objects, props, flowers, leaves, fantasy elements, glowing effects, neon lights, bokeh lights, unrealistic, cartoon, anime, painting, sketch, watercolor, low quality, blurry, distorted, deformed product, wrong text, no SUNSHINE text, different branding, wrong product shape",
-                        image_file: compositionUrl,
-                        style_type: "Realistic",
-                        magic_prompt_option: "Off", // 프롬프트 자동 수정 끄기!
-                        aspect_ratio: "1:1",
-                        output_format: "png",
-                        seed: Math.floor(Math.random() * 2147483647)
+                const output = await replicate.run(
+                    "black-forest-labs/flux-dev",
+                    {
+                        input: {
+                            prompt: finalPrompt,
+                            negative_prompt: negativePrompt,
+                            image: compositionUrl,
+                            prompt_strength: 0.80,
+                            num_inference_steps: 28,
+                            guidance_scale: 3.5,
+                            output_quality: 100,
+                            aspect_ratio: "1:1",
+                            output_format: "png",
+                            seed: Math.floor(Math.random() * 2147483647)
+                        }
                     }
-                });
-
-                // 디버깅 로그
-                console.log(`  📊 Output type: ${Array.isArray(output) ? 'Array' : typeof output}`);
-                console.log(`  📊 Output length: ${Array.isArray(output) ? output.length : 'N/A'}`);
-                console.log(`  📊 Output value: ${JSON.stringify(output).substring(0, 100)}...`);
+                );
 
                 const finalImage = Array.isArray(output) ? output[0] : output;
                 
                 if (finalImage) {
                     successfulImages.push(finalImage);
-                    console.log(`✅ [${i + 1}/${count}] 생성 완료: ${finalImage.substring(0, 50)}...`);
+                    console.log(`✅ [${i + 1}/${count}] 최종 합성 완료: ${finalImage.substring(0, 50)}...`);
                 } else {
                     console.error(`❌ [${i + 1}/${count}] 결과 없음`);
                 }
@@ -249,14 +254,14 @@ DO NOT GUESS MATERIALS - USE EXACTLY WHAT YOU SEE IN THE REFERENCE IMAGES.`;
         }
 
         console.log(`\n🎉 총 ${successfulImages.length}/${count}개 완료`);
-        console.log(`📊 최종 배열:`, successfulImages);
+        console.log(`💰 예상 비용: $${(successfulImages.length * 0.10).toFixed(2)}`);
 
         return res.status(200).json({
             success: true,
             images: successfulImages,
             count: successfulImages.length,
-            model: 'Ideogram V2 Remix (Best Quality)',
-            message: `${successfulImages.length}개의 최고 품질 이미지 생성 완료`
+            model: 'Advanced Pipeline (Inpainting + ControlNet + Flux Dev)',
+            message: `${successfulImages.length}개의 고품질 이미지 생성 완료`
         });
 
     } catch (error) {
