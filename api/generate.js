@@ -30,7 +30,7 @@ module.exports = async (req, res) => {
         const imgbbApiKey = process.env.IMGBB_API_KEY;
 
         if (!replicateToken) {
-            console.error('❌ REPLICATE_API_TOKEN not found');
+            console.error('\u274c REPLICATE_API_TOKEN not found');
             return res.status(500).json({
                 success: false,
                 error: 'Replicate API token not configured'
@@ -38,7 +38,7 @@ module.exports = async (req, res) => {
         }
 
         if (!imgbbApiKey) {
-            console.error('❌ IMGBB_API_KEY not found');
+            console.error('\u274c IMGBB_API_KEY not found');
             return res.status(500).json({
                 success: false,
                 error: 'imgbb API key not configured'
@@ -50,14 +50,14 @@ module.exports = async (req, res) => {
         if (!image_urls || !Array.isArray(image_urls) || image_urls.length !== 3) {
             return res.status(400).json({
                 success: false,
-                error: '3개의 이미지가 필요합니다'
+                error: '3\uac1c의 \uc774미지가 \ud544요합니다'
             });
         }
 
-        console.log(`🎨 Flux Pro 파이프라인 시작 (${count}장 병렬 생성)`);
+        console.log(`\ud83c\udfa8 Flux Pro \ud30c이프\ub77c인 \uc2dc작 (${count}\uc7a5 \ubcc0럼 \uc0dd성)`);
 
         // ========================================
-        // Data URI를 imgbb에 업로드
+        // Data URI를 imgbb에 \uc5c5로드
         // ========================================
         async function uploadToImgbb(dataUri, name = 'image') {
             try {
@@ -83,19 +83,19 @@ module.exports = async (req, res) => {
                     throw new Error('imgbb API returned error');
                 }
 
-                console.log(`  ✅ ${name} 업로드: ${data.data.url.substring(0, 50)}...`);
+                console.log(`  \u2705 ${name} \uc5c5로드: ${data.data.url.substring(0, 50)}...`);
                 return data.data.url;
 
             } catch (error) {
-                console.error(`  ❌ ${name} 업로드 실패:`, error.message);
+                console.error(`  \u274c ${name} \uc5c5로드 \uc2e4패:`, error.message);
                 throw error;
             }
         }
 
         // ========================================
-        // 3개 이미지 업로드
+        // 3\uac1c \uc774미지 \uc5c5로드
         // ========================================
-        console.log('\n📤 이미지 업로드 중...');
+        console.log('\n\ud83d\udce4 \uc774미지 \uc5c5로드 \uc911...');
         
         const [backgroundUrl, productUrl, compositionUrl] = await Promise.all([
             uploadToImgbb(image_urls[0], 'background'),
@@ -103,15 +103,15 @@ module.exports = async (req, res) => {
             uploadToImgbb(image_urls[2], 'composition')
         ]);
 
-        console.log('✅ 모든 이미지 Public URL 변환 완료!\n');
+        console.log('\u2705 \ubaa8든 \uc774미지 Public URL \ubcc0형 \uc644료!\n');
 
         // ========================================
-        // Replicate 초기화
+        // Replicate \ucd08기화
         // ========================================
         const replicate = new Replicate({ auth: replicateToken });
 
         // ========================================
-        // 프롬프트 생성 함수
+        // \ud504론트 \uc0dd성 \ud568수
         // ========================================
         function buildMasterPrompt(query) {
             return `Professional product photography composition using three reference images:
@@ -171,12 +171,12 @@ FINAL INSTRUCTION: Create a reference-accurate product photograph by precisely f
         const negativePrompt = `material assumptions, wood texture, wooden surface, wooden background, bamboo texture, bamboo surface, woven wood, wood grain, timber, hardwood, plywood, fabric texture, fabric background, textile, cloth, canvas, linen, metal surface, metallic background, brushed metal, stone texture, concrete surface, marble background, artistic interpretation, stylized rendering, abstract composition, illustration style, painting effect, wrong product shape, spherical jar, rounded jar, bowl-shaped container, vase shape, bottle shape, gold jar, golden container, bronze tones, copper finish, rose gold, champagne gold, opaque glass, frosted glass, colored glass, tinted glass, translucent glass, milky glass, cream-colored cap, beige cap, off-white cap, colored cap, transparent cap, decorative elements, props, accessories, flowers, leaves, branches, petals, stones, crystals, fabric draping, ribbons, boxes, fantasy elements, magical effects, glowing effects, light rays, lens flare, bokeh lights, neon accents, sparkles, unrealistic lighting, dramatic shadows, high contrast, oversaturation, cartoon style, anime style, manga style, comic art, watercolor, oil painting, sketch, drawing, illustration, CGI look, 3D render look, low quality, blurry, pixelated, distorted proportions, deformed product, wrong dimensions, incorrect text, missing text, different branding, wrong logo, material guessing`;
 
         // ========================================
-        // 병렬 생성 (Promise.all 사용)
+        // \ubcc0럼 \uc0dd성 (Promise.all \uc0ac용)
         // ========================================
-        console.log(`\n🚀 ${count}장 병렬 생성 시작...\n`);
+        console.log(`\n\ud83d\ude80 ${count}\uc7a5 \ubcc0럼 \uc0dd성 \uc2dc작...\n`);
 
+        // \uac01 \uc774미지 \uc0dd성을 Promise\ub85c \uc0dd성하고 \ubc94위에 \uc800장
         const generationPromises = [];
-
         for (let i = 0; i < count; i++) {
             const promise = replicate.run(
                 "black-forest-labs/flux-pro",
@@ -192,46 +192,48 @@ FINAL INSTRUCTION: Create a reference-accurate product photograph by precisely f
                         seed: Math.floor(Math.random() * 2147483647)
                     }
                 }
-            ).then(output => {
+            )
+            .then(output => {
                 const finalImage = Array.isArray(output) ? output[0] : output;
-                console.log(`✅ [${i + 1}/${count}] 생성 완료: ${finalImage ? finalImage.substring(0, 50) + '...' : 'null'}`);
+                console.log(`\u2705 [${i + 1}/${count}] \uc0dd성 \uc644료: ${finalImage ? finalImage.substring(0, 50) + '...' : 'null'}`);
                 return finalImage;
-            }).catch(error => {
-                console.error(`❌ [${i + 1}/${count}] 실패:`, error.message);
-                return null;
+            })
+            .catch(error => {
+                console.error(`\u274c [${i + 1}/${count}] \uc2e4\ud328:`, error.message);
+                return null; // \uc2e4\ud328\ud55c \uc0dd성은 null\ub85c \ucc98리
             });
 
             generationPromises.push(promise);
         }
 
-        // 모든 생성 완료 대기
+        // \ubaa8든 \uc0dd성 \uc644료 \ub300기
         const results = await Promise.all(generationPromises);
 
-        // null 제거
+        // \uc2e4\ud328\ud55c \ud56d목(null) \uc81c거
         const successfulImages = results.filter(img => img !== null);
 
         if (successfulImages.length === 0) {
-            console.error('❌ 모든 이미지 생성 실패');
-            throw new Error('이미지 생성 실패');
+            console.error('\u274c \ubaa8든 \uc774미지 \uc0dd성 \uc2e4\ud328');
+            throw new Error('\uc774미지 \uc0dd성 \uc2e4\ud328');
         }
 
-        console.log(`\n🎉 총 ${successfulImages.length}/${count}개 완료`);
-        console.log(`💰 예상 비용: $${(successfulImages.length * 0.055).toFixed(2)}`);
+        console.log(`\n\ud83c\udf89 \ucd1d ${successfulImages.length}/${count}\uac1c \uc644\ub8cc`);
+        console.log(`\ud83d\udcb0 \uc608상 \ube44용: $${(successfulImages.length * 0.055).toFixed(2)}`);
 
         return res.status(200).json({
             success: true,
             images: successfulImages,
             count: successfulImages.length,
             model: 'Flux Pro (High Quality)',
-            message: `${successfulImages.length}개의 고품질 이미지 생성 완료`
+            message: `${successfulImages.length}\uac1c의 \uace0품질 \uc774미지 \uc0dd성 \uc644료`
         });
 
     } catch (error) {
-        console.error('❌ 서버 에러:', error);
+        console.error('\u274c \uc11c버 \uc5d0러:', error);
         return res.status(500).json({
             success: false,
             error: 'Generation failed',
-            message: error.message || '이미지 생성 실패'
+            message: error.message || '\uc774미지 \uc0dd성 \uc2e4\ud328'
         });
     }
 };
