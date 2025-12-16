@@ -1,6 +1,6 @@
 // ========================================
-// KAKAO THUMB AI - Flux Dev with imgbb Upload
-// Data URI → Public URL → High-Quality Generation
+// KAKAO THUMB AI - Ideogram V2 Remix
+// Best Quality for Product Mood Shots
 // ========================================
 
 const Replicate = require('replicate');
@@ -45,7 +45,6 @@ module.exports = async (req, res) => {
             });
         }
 
-        
         const { image_urls, query, image_size = '2k', count = 4 } = req.body;
 
         if (!image_urls || !Array.isArray(image_urls) || image_urls.length !== 3) {
@@ -55,17 +54,15 @@ module.exports = async (req, res) => {
             });
         }
 
-        console.log('🎨 Flux Dev 파이프라인 시작 (imgbb 호스팅)');
+        console.log(`🎨 Ideogram V2 파이프라인 시작 (${count}장 생성)`);
 
         // ========================================
-        // Data URI를 imgbb에 업로드하여 Public URL 얻기
+        // Data URI를 imgbb에 업로드
         // ========================================
         async function uploadToImgbb(dataUri, name = 'image') {
             try {
-                // Data URI에서 base64 부분만 추출
                 const base64Data = dataUri.replace(/^data:image\/\w+;base64,/, '');
                 
-                // imgbb API 호출
                 const formData = new URLSearchParams();
                 formData.append('key', imgbbApiKey);
                 formData.append('image', base64Data);
@@ -86,8 +83,8 @@ module.exports = async (req, res) => {
                     throw new Error('imgbb API returned error');
                 }
 
-                console.log(`  ✅ ${name} 업로드 완료: ${data.data.url}`);
-                return data.data.url; // Public URL 반환
+                console.log(`  ✅ ${name} 업로드: ${data.data.url.substring(0, 50)}...`);
+                return data.data.url;
 
             } catch (error) {
                 console.error(`  ❌ ${name} 업로드 실패:`, error.message);
@@ -96,7 +93,7 @@ module.exports = async (req, res) => {
         }
 
         // ========================================
-        // 3개 이미지를 모두 imgbb에 업로드
+        // 3개 이미지 업로드
         // ========================================
         console.log('\n📤 이미지 업로드 중...');
         
@@ -106,16 +103,18 @@ module.exports = async (req, res) => {
             uploadToImgbb(image_urls[2], 'composition')
         ]);
 
-        console.log('\n✅ 모든 이미지 Public URL 변환 완료!');
+        console.log('✅ 모든 이미지 Public URL 변환 완료!\n');
 
         // ========================================
         // Replicate 초기화
         // ========================================
         const replicate = new Replicate({ auth: replicateToken });
-        const fluxDevModel = "black-forest-labs/flux-dev";
+        
+        // Ideogram V2 Remix 모델
+        const ideogramModel = "ideogram-ai/ideogram-v2";
 
         // ========================================
-        // 병렬 생성
+        // 병렬 생성 (count만큼)
         // ========================================
         const generationPromises = [];
 
@@ -123,90 +122,81 @@ module.exports = async (req, res) => {
             generationPromises.push(
                 (async () => {
                     try {
-                        console.log(`\n📸 이미지 ${i + 1}/${count} 생성 시작`);
+                        console.log(`📸 [${i + 1}/${count}] 생성 시작`);
 
-                        const masterPrompt = `Professional product mood shot creation:
+                        // 상세 프롬프트
+                        const masterPrompt = `Professional product photography mood shot:
 
-REFERENCE IMAGES PROVIDED:
-1. Background Reference: Natural lighting environment with warm wood tones
-2. Product Reference: SUNSHINE cosmetic jar with silver metallic finish
-3. Composition Reference: Product placement and spatial arrangement guide
+Create a high-quality commercial product photograph by combining three reference images:
 
-SYNTHESIS INSTRUCTIONS:
+BACKGROUND REFERENCE (Image 1):
+- Extract the warm wood texture and natural grain pattern
+- Capture the soft, diffused lighting from above
+- Maintain the ambient color temperature and warm tones
+- Preserve the luxurious, natural material aesthetic
 
-STEP 1 - ANALYZE COMPOSITION REFERENCE:
-- Extract exact product position, angle, and scale from the reference image
-- Identify spatial relationships and perspective
-- Maintain the overall layout structure exactly as shown
-- Preserve the depth and dimensional arrangement
+PRODUCT REFERENCE (Image 2):
+- Exact product: SUNSHINE cosmetic jar
+- Maintain transparent glass body with natural reflections
+- Preserve white cap on top
+- Keep the silver/chrome metallic label band
+- Match all product proportions and dimensions exactly
+- Preserve "SUNSHINE" branding text accurately
 
-STEP 2 - EXTRACT BACKGROUND ATMOSPHERE:
-- Capture the warm wood texture and color palette from background reference
-- Analyze lighting direction: soft, diffused from above
-- Note the ambient color temperature: warm neutral tones
-- Identify shadow characteristics: soft, subtle gradients
+COMPOSITION REFERENCE (Image 3):
+- Follow the exact product placement and position
+- Match the camera angle and perspective
+- Maintain the spatial arrangement
+- Preserve depth and dimensional relationships
 
-STEP 3 - INTEGRATE PRODUCT (SUNSHINE jar):
-- Place the exact SUNSHINE cosmetic jar as shown in product reference
-- Maintain silver metallic finish and cylindrical form
-- Preserve all product text: "SUNSHINE" branding
-- Keep the white cap and silver body distinction
-- Match the exact product shape and proportions
+INTEGRATION REQUIREMENTS:
+- Seamlessly blend the SUNSHINE jar into the wood background
+- Generate natural shadows matching the lighting direction
+- Add subtle reflections on the glass surface from the environment
+- Ensure perfect color harmony between product and background
+- Create realistic ambient occlusion at the product base
+- Match shadow softness and light falloff naturally
 
-LIGHTING & SHADOWS:
-- Match the soft, diffused lighting from Background Reference
-- Generate natural shadows consistent with light direction
-- Create subtle reflections on the metallic silver surface
-- Add warm ambient light bounce from wood background
-- Ensure shadow softness matches the reference lighting style
-
-COLOR & ATMOSPHERE:
-- Harmonize product silver tones with warm wood background
-- Maintain color temperature consistency throughout
-- Preserve the luxurious, high-end product photography aesthetic
-- Create depth through subtle tonal variations
-
-TECHNICAL QUALITY:
-- Ultra-high resolution commercial photography standard
-- Sharp product details with natural depth of field
-- Seamless integration with no composite artifacts
-- Professional studio lighting quality
-- Magazine-worthy final output
+QUALITY STANDARDS:
+- Professional commercial photography grade
+- Ultra-high resolution with sharp details
+- Natural depth of field with gentle background blur
+- Magazine-quality output suitable for e-commerce
+- No composite artifacts or visible seams
+- Photorealistic rendering throughout
 
 ${query}
 
-Final result: A photorealistic product mood shot of the SUNSHINE cosmetic jar on warm wood background, with perfect lighting integration and commercial photography quality.`;
+Output: A photorealistic product mood shot of the SUNSHINE cosmetic jar on warm wood background with perfect lighting and shadow integration.`;
 
-                        const negativePrompt = "low quality, blurry, distorted, wrong product, different product, wrong text, text errors, unrealistic shadows, harsh lighting, artificial composite, visible seams, pixelated, watermark, amateur photography, color mismatch, poor integration, deformed product, wrong colors, wrong branding";
-
-                        // Flux Dev img2img 실행 (이제 Public URL 사용!)
-                        const output = await replicate.run(fluxDevModel, {
+                        // Ideogram V2 Remix 실행
+                        const output = await replicate.run(ideogramModel, {
                             input: {
                                 prompt: masterPrompt,
-                                image: compositionUrl, // ← Public URL!
-                                prompt_strength: 0.80,
-                                num_inference_steps: 28,
-                                guidance_scale: 3.5,
+                                image_file: compositionUrl,
+                                style_type: "Realistic",
+                                magic_prompt_option: "Auto",
+                                aspect_ratio: "1:1",
                                 output_format: "png",
-                                output_quality: 100,
-                                seed: Math.floor(Math.random() * 1000000)
+                                seed: Math.floor(Math.random() * 2147483647)
                             }
                         });
 
                         const finalImage = Array.isArray(output) ? output[0] : output;
                         
-                        console.log(`  ✅ 이미지 ${i + 1}/${count} 생성 완료!`);
+                        console.log(`✅ [${i + 1}/${count}] 생성 완료`);
                         return finalImage;
 
                     } catch (error) {
-                        console.error(`  ❌ 이미지 ${i + 1}/${count} 실패:`, error.message);
-                        console.error('  Error details:', JSON.stringify(error, null, 2));
+                        console.error(`❌ [${i + 1}/${count}] 실패:`, error.message);
                         return null;
                     }
                 })()
             );
         }
 
+        // 모든 생성 완료 대기
+        console.log(`\n⏳ ${count}장 병렬 생성 중...\n`);
         const generatedImages = await Promise.all(generationPromises);
         const successfulImages = generatedImages.filter(img => img !== null);
 
@@ -221,8 +211,8 @@ Final result: A photorealistic product mood shot of the SUNSHINE cosmetic jar on
             success: true,
             images: successfulImages,
             count: successfulImages.length,
-            model: 'Flux Dev img2img (imgbb hosted)',
-            message: `${successfulImages.length}개의 고품질 이미지 생성 완료`
+            model: 'Ideogram V2 Remix (Best Quality)',
+            message: `${successfulImages.length}개의 최고 품질 이미지 생성 완료`
         });
 
     } catch (error) {
