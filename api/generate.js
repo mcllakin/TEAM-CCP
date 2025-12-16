@@ -1,6 +1,6 @@
 // ========================================
-// KAKAO THUMB AI - Flux Dev Multi-Reference
-// Optimized for Texture Accuracy
+// KAKAO THUMB AI - Flux 1.1 Pro Ultra
+// Multi-Image Reference + Ultra Quality
 // ========================================
 
 const Replicate = require('replicate');
@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
             });
         }
 
-        console.log(`🎨 Flux Dev 파이프라인 시작 (${count}장 생성)`);
+        console.log(`🎨 Flux 1.1 Pro Ultra 파이프라인 시작 (${count}장 생성)`);
 
         // ========================================
         // Data URI를 imgbb에 업로드
@@ -111,7 +111,7 @@ module.exports = async (req, res) => {
         const replicate = new Replicate({ auth: replicateToken });
 
         // ========================================
-        // Flux Dev 순차 생성
+        // Flux 1.1 Pro Ultra 순차 생성
         // ========================================
         const successfulImages = [];
 
@@ -119,65 +119,74 @@ module.exports = async (req, res) => {
             try {
                 console.log(`\n📸 [${i + 1}/${count}] 생성 시작`);
 
-                // 배경 질감 분석 및 설명 생성
-                const backgroundDescription = `The background surface has a specific texture and pattern visible in the reference image. Analyze and replicate this EXACT surface appearance without assuming it is wood, fabric, metal, or any specific material. Copy the visual texture AS-IS: the surface pattern (grid lines, weave pattern, smooth surface, rough texture, or whatever is present), the exact color tones, the lighting characteristics, and the surface reflectivity. Do not interpret - directly replicate what you see.`;
+                // 초정밀 프롬프트 (배경 질감 가정 제거)
+                const masterPrompt = `Professional product photography composition using three reference images:
 
-                // 제품 정밀 설명
-                const productDescription = `SUNSHINE cosmetic jar product with these EXACT specifications:
-- Shape: Cylindrical jar (not rounded, not bowl-shaped)
-- Body: Transparent crystal-clear glass (see-through, not opaque, not colored)
-- Cap: Pure white dome top (not cream, not beige, not off-white)
-- Label: Silver/chrome metallic band around the middle (not gold, not bronze, not copper)
-- Branding: "SUNSHINE" text clearly visible and legible
-- Size proportions: Match the exact height-to-width ratio from the product reference
-- Glass clarity: Transparent with natural light reflections showing background through the glass`;
+BACKGROUND TEXTURE ANALYSIS (Image 1 - Critical):
+Examine the background surface in Image 1 and replicate its EXACT visual appearance without making ANY material assumptions:
+- Surface pattern: Copy whatever pattern exists (grid lines, crosshatch, weave, smooth, textured, or any other visible pattern) exactly as seen
+- Color palette: Replicate the precise color tones, shades, and gradients visible in the background
+- Lighting quality: Match the ambient lighting, highlights, and shadow characteristics
+- Surface finish: Observe and replicate the surface reflectivity or matte appearance as shown
+- Texture details: Copy fine texture details visible in the reference
+DO NOT assume this is wood, bamboo, fabric, metal, stone, or any specific material. Simply analyze the visual characteristics and replicate them precisely.
 
-                // 통합 마스터 프롬프트
-                const masterPrompt = `Create a professional product photography composition by precisely following these three reference images:
+PRODUCT SPECIFICATIONS (Image 2 - Critical):
+SUNSHINE luxury cosmetic jar with exact details:
+- Container shape: Cylindrical cosmetic jar with gently rounded edges (NOT bowl-shaped, NOT spherical, NOT vase-like)
+- Glass body: Completely transparent crystal-clear glass allowing full see-through visibility
+- Glass quality: High clarity with natural light refraction and subtle reflections
+- Cap design: Pure white dome-shaped top cap (NOT cream-colored, NOT beige, NOT off-white)
+- Metallic band: Silver or chrome metallic ring around the middle section (NOT gold, NOT bronze, NOT copper, NOT rose gold)
+- Branding: "SUNSHINE" text clearly visible and legible on the jar
+- Proportions: Maintain the exact height-to-width ratio shown in the product reference
+- Transparency note: The glass must show the background surface through the jar body
 
-REFERENCE IMAGE 1 - BACKGROUND TEXTURE:
-${backgroundDescription}
+COMPOSITION GUIDANCE (Image 3 - Important):
+- Product placement: Position the SUNSHINE jar at the same location shown in the composition reference
+- Camera angle: Match the viewing perspective and camera height from the reference
+- Product distance: Maintain similar product-to-camera distance as shown
+- Product orientation: Match the jar's facing direction and rotation angle
+- Overall layout: Follow the spatial arrangement from the composition reference
 
-REFERENCE IMAGE 2 - PRODUCT SPECIFICATIONS:
-${productDescription}
-
-REFERENCE IMAGE 3 - COMPOSITION & PLACEMENT:
-Position the product at the exact location shown in the composition reference. Match the camera angle, viewing perspective, product-to-camera distance, and product orientation exactly as shown. The product should be placed naturally on the background surface.
-
-LIGHTING & INTEGRATION:
-- Natural lighting matching the background reference's light direction and intensity
-- Realistic shadows cast by the product matching the background's lighting angle
-- Shadow softness and ambient occlusion appropriate to the background's lighting quality
-- Glass reflections showing the background surface texture through transparency
-- Color temperature consistent across the entire image
-- Seamless integration with no visible composite artifacts
+LIGHTING & INTEGRATION (Critical for Realism):
+- Light direction: Natural lighting matching the background reference's light source direction
+- Light intensity: Ambient light level consistent with the background atmosphere
+- Shadow casting: Realistic product shadow matching the background's lighting angle and softness
+- Shadow characteristics: Shadow density and edge softness appropriate to the lighting quality
+- Glass reflections: Transparent glass body showing the background surface texture through the glass
+- Glass highlights: Natural specular highlights on glass and cap surfaces
+- Ambient occlusion: Subtle darkening where the product base meets the background surface
+- Color harmony: Unified color temperature across the entire composition
+- Seamless integration: No visible composite edges, perfect blending of product and background
 
 QUALITY STANDARDS:
-- Photorealistic commercial product photography
-- Professional e-commerce quality suitable for luxury cosmetics
-- 8K detail and clarity
-- Natural color accuracy
-- Studio-quality lighting and composition
+- Photorealistic rendering with natural appearance
+- Professional commercial product photography quality
+- Luxury cosmetics e-commerce standard
+- 8K resolution detail and clarity
+- Natural color accuracy and calibration
+- Studio-quality composition and lighting
+- Zero artificial effects or stylization
 
-CRITICAL INSTRUCTION: This is reference-based photography. You must replicate what you SEE in the reference images without making assumptions about materials, adding artistic interpretation, or creating stylized variations. Copy the visual appearance directly and accurately.
+${query}
 
-${query}`;
+FINAL INSTRUCTION: Create a reference-accurate product photograph by precisely following the three input images. Do not add artistic interpretation, material assumptions, or creative variations. Replicate the visual information directly and accurately for professional commercial use.`;
 
-                const negativePrompt = `wood texture, wooden surface, bamboo, fabric texture, metal surface, stone, concrete, marble, artistic interpretation, stylized, abstract, different product, wrong product shape, gold jar, bronze jar, copper jar, rose gold, opaque glass, colored glass, frosted glass, rounded jar, bowl shape, vase shape, cream cap, beige cap, colored cap, decorative objects, props, flowers, leaves, branches, fantasy elements, glowing effects, neon lights, bokeh lights, lens flare, unrealistic lighting, cartoon, anime, illustration, painting, sketch, watercolor, low quality, blurry, pixelated, distorted, deformed, wrong proportions, wrong text, no text, different branding, material assumptions`;
+                const negativePrompt = `material assumptions, wood texture, wooden surface, wooden background, bamboo texture, bamboo surface, woven wood, wood grain, timber, hardwood, plywood, fabric texture, fabric background, textile, cloth, canvas, linen, metal surface, metallic background, brushed metal, stone texture, concrete surface, marble background, artistic interpretation, stylized rendering, abstract composition, illustration style, painting effect, wrong product shape, spherical jar, rounded jar, bowl-shaped container, vase shape, bottle shape, gold jar, golden container, bronze tones, copper finish, rose gold, champagne gold, opaque glass, frosted glass, colored glass, tinted glass, translucent glass, milky glass, cream-colored cap, beige cap, off-white cap, colored cap, transparent cap, decorative elements, props, accessories, flowers, leaves, branches, petals, stones, crystals, fabric draping, ribbons, boxes, fantasy elements, magical effects, glowing effects, light rays, lens flare, bokeh lights, neon accents, sparkles, unrealistic lighting, dramatic shadows, high contrast, oversaturation, cartoon style, anime style, manga style, comic art, watercolor, oil painting, sketch, drawing, illustration, CGI look, 3D render look, low quality, blurry, pixelated, distorted proportions, deformed product, wrong dimensions, incorrect text, missing text, different branding, wrong logo, material guessing`;
 
                 const output = await replicate.run(
-                    "black-forest-labs/flux-dev",
+                    "black-forest-labs/flux-1.1-pro-ultra",
                     {
                         input: {
                             prompt: masterPrompt,
                             negative_prompt: negativePrompt,
                             image: compositionUrl,
                             prompt_strength: 0.75,
-                            num_inference_steps: 30,
-                            guidance_scale: 3.5,
                             output_quality: 100,
                             aspect_ratio: "1:1",
                             output_format: "png",
+                            safety_tolerance: 2,
                             seed: Math.floor(Math.random() * 2147483647)
                         }
                     }
@@ -203,13 +212,14 @@ ${query}`;
         }
 
         console.log(`\n🎉 총 ${successfulImages.length}/${count}개 완료`);
+        console.log(`💰 예상 비용: $${(successfulImages.length * 0.04).toFixed(2)}`);
 
         return res.status(200).json({
             success: true,
             images: successfulImages,
             count: successfulImages.length,
-            model: 'Flux Dev (Texture-Accurate)',
-            message: `${successfulImages.length}개의 고품질 이미지 생성 완료`
+            model: 'Flux 1.1 Pro Ultra (Best Quality)',
+            message: `${successfulImages.length}개의 초고품질 이미지 생성 완료`
         });
 
     } catch (error) {
