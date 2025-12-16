@@ -1,6 +1,6 @@
 // ========================================
-// KAKAO THUMB AI - Advanced Multi-Step Pipeline
-// ControlNet + IP-Adapter + Flux Dev
+// KAKAO THUMB AI - Flux Dev Multi-Reference
+// Optimized for Texture Accuracy
 // ========================================
 
 const Replicate = require('replicate');
@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
             });
         }
 
-        console.log(`🎨 Advanced 3-Step Pipeline 시작 (${count}장 생성)`);
+        console.log(`🎨 Flux Dev 파이프라인 시작 (${count}장 생성)`);
 
         // ========================================
         // Data URI를 imgbb에 업로드
@@ -111,120 +111,69 @@ module.exports = async (req, res) => {
         const replicate = new Replicate({ auth: replicateToken });
 
         // ========================================
-        // STEP 1: Background Inpainting
-        // (배경에서 기존 제품 제거)
+        // Flux Dev 순차 생성
         // ========================================
-        console.log('\n🎯 STEP 1: Background Inpainting (배경 정제)');
-        
-        const inpaintingPrompt = `Clean empty background surface with EXACT texture and pattern visible in the image. Remove all objects, products, and items. Preserve only the pure background surface texture, pattern, color, and lighting. High quality, photorealistic, 8K detail.`;
-        
-        let cleanBackgroundUrl;
-        try {
-            const inpaintOutput = await replicate.run(
-                "stability-ai/stable-diffusion-inpainting",
-                {
-                    input: {
-                        image: backgroundUrl,
-                        prompt: inpaintingPrompt,
-                        negative_prompt: "objects, products, items, props, decorations, blur, low quality",
-                        num_inference_steps: 50,
-                        guidance_scale: 9.0,
-                        scheduler: "DPMSolverMultistep"
-                    }
-                }
-            );
-            
-            cleanBackgroundUrl = Array.isArray(inpaintOutput) ? inpaintOutput[0] : inpaintOutput;
-            console.log(`✅ Step 1 완료: ${cleanBackgroundUrl.substring(0, 50)}...`);
-            
-        } catch (error) {
-            console.error('❌ Inpainting 실패:', error.message);
-            // Fallback: 원본 배경 사용
-            cleanBackgroundUrl = backgroundUrl;
-            console.log('⚠️  원본 배경 사용');
-        }
-
-        // ========================================
-        // STEP 2: ControlNet Canny
-        // (제품 윤곽선 추출)
-        // ========================================
-        console.log('\n🎯 STEP 2: ControlNet Canny (제품 윤곽 추출)');
-        
-        let productCannyUrl;
-        try {
-            const cannyOutput = await replicate.run(
-                "jagilley/controlnet-canny",
-                {
-                    input: {
-                        image: productUrl,
-                        structure: "canny",
-                        prompt: "product outline, clean edges, transparent background"
-                    }
-                }
-            );
-            
-            productCannyUrl = Array.isArray(cannyOutput) ? cannyOutput[0] : cannyOutput;
-            console.log(`✅ Step 2 완료: ${productCannyUrl.substring(0, 50)}...`);
-            
-        } catch (error) {
-            console.error('❌ ControlNet 실패:', error.message);
-            // Fallback: 원본 제품 사용
-            productCannyUrl = productUrl;
-            console.log('⚠️  원본 제품 사용');
-        }
-
-        // ========================================
-        // STEP 3: Flux Dev Final Composition
-        // (최종 고품질 합성)
-        // ========================================
-        console.log('\n🎯 STEP 3: Flux Dev Final Composition (최종 합성)');
-        console.log(`📊 생성할 이미지: ${count}개\n`);
-
         const successfulImages = [];
 
         for (let i = 0; i < count; i++) {
             try {
-                console.log(`\n📸 [${i + 1}/${count}] 최종 합성 시작`);
+                console.log(`\n📸 [${i + 1}/${count}] 생성 시작`);
 
-                // 초강력 프롬프트
-                const finalPrompt = `Professional product photography composition:
+                // 배경 질감 분석 및 설명 생성
+                const backgroundDescription = `The background surface has a specific texture and pattern visible in the reference image. Analyze and replicate this EXACT surface appearance without assuming it is wood, fabric, metal, or any specific material. Copy the visual texture AS-IS: the surface pattern (grid lines, weave pattern, smooth surface, rough texture, or whatever is present), the exact color tones, the lighting characteristics, and the surface reflectivity. Do not interpret - directly replicate what you see.`;
 
-BACKGROUND (from cleaned reference):
-- Use the EXACT surface texture from the background image
-- Preserve EXACT surface pattern (grid, weave, smooth, rough, whatever exists)
-- Maintain EXACT color tones and lighting
-- DO NOT assume or interpret material type
-- Copy the visual appearance AS-IS
+                // 제품 정밀 설명
+                const productDescription = `SUNSHINE cosmetic jar product with these EXACT specifications:
+- Shape: Cylindrical jar (not rounded, not bowl-shaped)
+- Body: Transparent crystal-clear glass (see-through, not opaque, not colored)
+- Cap: Pure white dome top (not cream, not beige, not off-white)
+- Label: Silver/chrome metallic band around the middle (not gold, not bronze, not copper)
+- Branding: "SUNSHINE" text clearly visible and legible
+- Size proportions: Match the exact height-to-width ratio from the product reference
+- Glass clarity: Transparent with natural light reflections showing background through the glass`;
 
-PRODUCT (SUNSHINE jar):
-- Cylindrical transparent glass cosmetic jar
-- White dome cap on top
-- Silver/chrome metallic label band
-- "SUNSHINE" branding clearly visible
-- Transparent glass body with natural reflections
-- EXACT shape and proportions from product reference
+                // 통합 마스터 프롬프트
+                const masterPrompt = `Create a professional product photography composition by precisely following these three reference images:
 
-COMPOSITION:
-- Follow the product placement and angle from composition reference
-- Natural lighting matching background
-- Realistic shadows and reflections
-- Professional commercial quality
-- Photorealistic integration
-- 8K detail, studio quality
+REFERENCE IMAGE 1 - BACKGROUND TEXTURE:
+${backgroundDescription}
 
-CRITICAL: This is reference-based photography. Copy what you SEE in the references, do not interpret or assume materials.`;
+REFERENCE IMAGE 2 - PRODUCT SPECIFICATIONS:
+${productDescription}
 
-                const negativePrompt = "artistic interpretation, stylized, abstract, wrong product shape, gold tones, bronze tones, opaque glass, rounded jar, bowl shape, wood texture assumption, fabric assumption, metal assumption, decorative props, fantasy elements, glowing effects, low quality, blurry, distorted, wrong colors, different product";
+REFERENCE IMAGE 3 - COMPOSITION & PLACEMENT:
+Position the product at the exact location shown in the composition reference. Match the camera angle, viewing perspective, product-to-camera distance, and product orientation exactly as shown. The product should be placed naturally on the background surface.
+
+LIGHTING & INTEGRATION:
+- Natural lighting matching the background reference's light direction and intensity
+- Realistic shadows cast by the product matching the background's lighting angle
+- Shadow softness and ambient occlusion appropriate to the background's lighting quality
+- Glass reflections showing the background surface texture through transparency
+- Color temperature consistent across the entire image
+- Seamless integration with no visible composite artifacts
+
+QUALITY STANDARDS:
+- Photorealistic commercial product photography
+- Professional e-commerce quality suitable for luxury cosmetics
+- 8K detail and clarity
+- Natural color accuracy
+- Studio-quality lighting and composition
+
+CRITICAL INSTRUCTION: This is reference-based photography. You must replicate what you SEE in the reference images without making assumptions about materials, adding artistic interpretation, or creating stylized variations. Copy the visual appearance directly and accurately.
+
+${query}`;
+
+                const negativePrompt = `wood texture, wooden surface, bamboo, fabric texture, metal surface, stone, concrete, marble, artistic interpretation, stylized, abstract, different product, wrong product shape, gold jar, bronze jar, copper jar, rose gold, opaque glass, colored glass, frosted glass, rounded jar, bowl shape, vase shape, cream cap, beige cap, colored cap, decorative objects, props, flowers, leaves, branches, fantasy elements, glowing effects, neon lights, bokeh lights, lens flare, unrealistic lighting, cartoon, anime, illustration, painting, sketch, watercolor, low quality, blurry, pixelated, distorted, deformed, wrong proportions, wrong text, no text, different branding, material assumptions`;
 
                 const output = await replicate.run(
                     "black-forest-labs/flux-dev",
                     {
                         input: {
-                            prompt: finalPrompt,
+                            prompt: masterPrompt,
                             negative_prompt: negativePrompt,
                             image: compositionUrl,
-                            prompt_strength: 0.80,
-                            num_inference_steps: 28,
+                            prompt_strength: 0.75,
+                            num_inference_steps: 30,
                             guidance_scale: 3.5,
                             output_quality: 100,
                             aspect_ratio: "1:1",
@@ -238,7 +187,7 @@ CRITICAL: This is reference-based photography. Copy what you SEE in the referenc
                 
                 if (finalImage) {
                     successfulImages.push(finalImage);
-                    console.log(`✅ [${i + 1}/${count}] 최종 합성 완료: ${finalImage.substring(0, 50)}...`);
+                    console.log(`✅ [${i + 1}/${count}] 생성 완료: ${finalImage.substring(0, 50)}...`);
                 } else {
                     console.error(`❌ [${i + 1}/${count}] 결과 없음`);
                 }
@@ -254,13 +203,12 @@ CRITICAL: This is reference-based photography. Copy what you SEE in the referenc
         }
 
         console.log(`\n🎉 총 ${successfulImages.length}/${count}개 완료`);
-        console.log(`💰 예상 비용: $${(successfulImages.length * 0.10).toFixed(2)}`);
 
         return res.status(200).json({
             success: true,
             images: successfulImages,
             count: successfulImages.length,
-            model: 'Advanced Pipeline (Inpainting + ControlNet + Flux Dev)',
+            model: 'Flux Dev (Texture-Accurate)',
             message: `${successfulImages.length}개의 고품질 이미지 생성 완료`
         });
 
