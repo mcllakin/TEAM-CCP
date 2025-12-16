@@ -1,5 +1,5 @@
 // ========================================
-// KAKAO THUMB AI - Flux Pro (안정화 버전)
+// KAKAO THUMB AI - Image-Based Generation
 // ========================================
 
 const Replicate = require("replicate");
@@ -21,72 +21,37 @@ module.exports = async (req, res) => {
     const imgbbApiKey = process.env.IMGBB_API_KEY;
 
     console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🎨 KAKAO THUMB AI - Flux Pro");
+    console.log("🎨 KAKAO THUMB AI - Image-Based");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
-    if (!replicateToken) {
-      console.error("❌ REPLICATE_API_TOKEN 없음");
-      return res.status(500).json({ success: false, error: "REPLICATE_API_TOKEN not configured" });
-    }
-    if (!imgbbApiKey) {
-      console.error("❌ IMGBB_API_KEY 없음");
-      return res.status(500).json({ success: false, error: "IMGBB_API_KEY not configured" });
+    if (!replicateToken || !imgbbApiKey) {
+      return res.status(500).json({ success: false, error: "API keys not configured" });
     }
 
-    const { image_urls, query, image_size = "2k", count = 4 } = req.body || {};
-
-    console.log(`📋 요청:`);
-    console.log(`   Count: ${count}`);
-    console.log(`   Images: ${image_urls?.length}개`);
+    const { image_urls, query, count = 4 } = req.body || {};
 
     if (!image_urls || !Array.isArray(image_urls) || image_urls.length !== 3) {
       return res.status(400).json({ success: false, error: "3개의 이미지가 필요합니다." });
     }
 
     const safeCount = Math.max(1, Math.min(Number(count) || 4, 8));
-    console.log(`✅ 생성 수: ${safeCount}\n`);
 
     // Upload to imgbb
     async function uploadToImgbb(dataUri, name = "image") {
-      try {
-        const base64Data = String(dataUri).replace(/^data:image\/\w+;base64,/, "");
-        const formData = new URLSearchParams();
-        formData.append("key", imgbbApiKey);
-        formData.append("image", base64Data);
-        formData.append("name", name);
+      const base64Data = String(dataUri).replace(/^data:image\/\w+;base64,/, "");
+      const formData = new URLSearchParams();
+      formData.append("key", imgbbApiKey);
+      formData.append("image", base64Data);
+      formData.append("name", name);
 
-        const r = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: formData });
-        if (!r.ok) throw new Error(`imgbb HTTP ${r.status}`);
-        const j = await r.json();
-        if (!j.success) throw new Error("imgbb error");
-        console.log(`  ✅ ${name}`);
-        return j.data.url;
-      } catch (error) {
-        console.error(`  ❌ ${name}:`, error.message);
-        throw error;
-      }
+      const r = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: formData });
+      if (!r.ok) throw new Error(`imgbb HTTP ${r.status}`);
+      const j = await r.json();
+      if (!j.success) throw new Error("imgbb error");
+      console.log(`  ✅ ${name}`);
+      return j.data.url;
     }
 
-    // Extract URLs
-    function extractUrls(output) {
-      const urls = [];
-      if (!output) return urls;
-      if (typeof output === "string") return [output];
-      if (Array.isArray(output)) {
-        for (const item of output) urls.push(...extractUrls(item));
-        return urls;
-      }
-      if (typeof output === "object") {
-        if (output.url) urls.push(output.url);
-        if (output.image) urls.push(output.image);
-        if (output.output) urls.push(...extractUrls(output.output));
-        if (output.images) urls.push(...extractUrls(output.images));
-        if (output.data) urls.push(...extractUrls(output.data));
-      }
-      return urls.filter(Boolean);
-    }
-
-    // Upload images
     console.log("📤 업로드 중...");
     const [backgroundUrl, productUrl, compositionUrl] = await Promise.all([
       uploadToImgbb(image_urls[0], "background"),
@@ -95,17 +60,15 @@ module.exports = async (req, res) => {
     ]);
     console.log("✅ 완료\n");
 
-    // Prompt
-    const masterPrompt = `Professional product photography. SUNSHINE luxury cosmetic jar with transparent glass body, white dome cap, silver metallic band. Place on background surface matching the composition reference. Natural lighting, realistic shadows, photorealistic quality, commercial photography. ${query || ""}`;
+    // 이미지 중심 프롬프트 (제품 설명 제거)
+    const masterPrompt = `Photorealistic product photography. Recreate the exact product from the reference image with all original details: shape, material, color, branding, label text. Place it on the background surface shown in the reference. Match the composition, lighting, and atmosphere from the reference images. Professional commercial photography quality, 8K detail, natural lighting, realistic shadows and reflections. ${query || ""}`;
 
-    const negativePrompt = `artistic interpretation, stylized, cartoon, painting, low quality, blurry, distorted, wrong product`;
+    const negativePrompt = `different product, different branding, wrong text, wrong shape, SUNSHINE text (unless in original), artistic interpretation, stylized, cartoon, painting, illustration, low quality, blurry, distorted`;
 
-    // Replicate
     const replicate = new Replicate({ auth: replicateToken });
 
-    // Generate one image
+    // Generate one
     const generateOne = async (index, seed) => {
-      const startTime = Date.now();
       console.log(`🎨 [${index + 1}/${safeCount}] 시작 (seed: ${seed})`);
 
       try {
@@ -114,8 +77,8 @@ module.exports = async (req, res) => {
             prompt: masterPrompt,
             negative_prompt: negativePrompt,
             image: compositionUrl,
-            prompt_strength: 0.75,
-            guidance: 3.5,
+            prompt_strength: 0.85, // 이미지 참조 강도 증가
+            guidance: 2.5, // 프롬프트 영향 감소
             num_outputs: 1,
             aspect_ratio: "1:1",
             output_format: "png",
@@ -125,25 +88,27 @@ module.exports = async (req, res) => {
           },
         });
 
-        const urls = extractUrls(output);
+        const urls = [];
+        if (typeof output === "string") urls.push(output);
+        else if (Array.isArray(output)) urls.push(...output);
+        else if (output?.url) urls.push(output.url);
+
         const finalUrl = urls[0] || null;
-        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
         if (finalUrl) {
-          console.log(`✅ [${index + 1}/${safeCount}] 완료 (${elapsed}s)`);
+          console.log(`✅ [${index + 1}/${safeCount}] 완료`);
         } else {
           console.log(`❌ [${index + 1}/${safeCount}] 실패`);
         }
 
         return finalUrl;
       } catch (error) {
-        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-        console.error(`❌ [${index + 1}/${safeCount}] 에러 (${elapsed}s):`, error.message);
+        console.error(`❌ [${index + 1}/${safeCount}] 에러:`, error.message);
         return null;
       }
     };
 
-    // Parallel generation
+    // Parallel
     console.log(`🚀 ${safeCount}개 병렬 생성...\n`);
     const seeds = Array.from({ length: safeCount }, () => Math.floor(Math.random() * 2147483647));
 
@@ -174,10 +139,9 @@ module.exports = async (req, res) => {
     }
 
     if (images.length === 0) {
-      console.error("❌ 모든 생성 실패\n");
       return res.status(500).json({
         success: false,
-        error: "모든 이미지 생성 실패",
+        error: "모든 생성 실패",
       });
     }
 
@@ -188,22 +152,19 @@ module.exports = async (req, res) => {
     console.log(`💰 비용: $${(images.length * 0.055).toFixed(3)}`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
-    console.log(`📦 반환:`);
-    images.forEach((url, i) => console.log(`  [${i + 1}] ${url.substring(0, 70)}...`));
-
     return res.status(200).json({
       success: true,
       images: images,
       count: images.length,
-      model: "Flux Pro",
+      model: "Flux Pro (Image-Based)",
       message: `${images.length}개 생성 완료`,
     });
   } catch (error) {
-    console.error("\n❌ 최상위 에러:", error);
+    console.error("\n❌ 에러:", error);
     return res.status(500).json({
       success: false,
       error: "Generation failed",
-      message: error.message || "Unknown error",
+      message: error.message,
     });
   }
 };
