@@ -32,7 +32,6 @@
                     <span class="meta-line">NANO BANANA PRO ENGINE</span>
                 </p>
             </div>
-
         </div>
     </section>
 
@@ -117,92 +116,83 @@
             </div>
 
             <div class="options-grid">
-                <!-- Mood Intensity -->
+                <!-- Option 1: Mood Intensity -->
                 <div class="option-box">
-                    <div class="option-number">001</div>
-                    <div class="option-content">
-                        <label class="option-label">
-                            Mood Intensity
-                            <span class="option-sublabel">무드 보정 강도</span>
-                        </label>
-                        <div class="option-description">
-                            배경의 분위기와 조명을 제품에 적용하는 강도
-                        </div>
-                        <div class="slider-container">
-                            <input type="range" id="mood-intensity" min="1" max="10" value="7" class="slider">
-                            <div class="slider-value" id="mood-value">07</div>
-                        </div>
+                    <label class="option-label">
+                        Mood Intensity
+                        <span class="option-sublabel">무드 보정 강도</span>
+                    </label>
+                    <div class="option-description">
+                        배경 분위기를 얼마나 강하게 적용할지 조절
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="mood-intensity" min="0" max="10" value="7">
+                        <div class="slider-value" id="mood-value">07</div>
                     </div>
                 </div>
 
-                <!-- Product Preservation -->
+                <!-- Option 2: Product Preservation -->
                 <div class="option-box">
-                    <div class="option-number">002</div>
-                    <div class="option-content">
-                        <label class="option-label">
-                            Product Preservation
-                            <span class="option-sublabel">제품 보존 강도</span>
-                        </label>
-                        <div class="option-description">
-                            원본 제품의 형태와 디테일을 보존하는 강도
-                        </div>
-                        <div class="slider-container">
-                            <input type="range" id="product-preservation" min="1" max="10" value="8" class="slider">
-                            <div class="slider-value" id="product-value">08</div>
-                        </div>
+                    <label class="option-label">
+                        Product Preservation
+                        <span class="option-sublabel">제품 보존 강도</span>
+                    </label>
+                    <div class="option-description">
+                        제품 디테일을 얼마나 보존할지 조절
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="product-preservation" min="0" max="10" value="8">
+                        <div class="slider-value" id="product-value">08</div>
                     </div>
                 </div>
 
-                <!-- Output Resolution -->
+                <!-- Option 3: Resolution -->
                 <div class="option-box">
-                    <div class="option-number">003</div>
-                    <div class="option-content">
-                        <label class="option-label">
-                            Output Resolution
-                            <span class="option-sublabel">출력 해상도</span>
+                    <label class="option-label">
+                        Output Resolution
+                        <span class="option-sublabel">출력 해상도</span>
+                    </label>
+                    <div class="option-description">
+                        생성할 이미지의 해상도 선택
+                    </div>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="resolution" value="2k" checked>
+                            <span class="radio-label">2K — Fast Processing</span>
                         </label>
-                        <div class="option-description">
-                            생성될 이미지의 해상도 선택
-                        </div>
-                        <div class="radio-container">
-                            <label class="radio-label">
-                                <input type="radio" name="resolution" value="2k" checked>
-                                <span class="radio-custom"></span>
-                                <span class="radio-text">2K (Fast)</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="resolution" value="4k">
-                                <span class="radio-custom"></span>
-                                <span class="radio-text">4K (High Quality)</span>
-                            </label>
-                        </div>
+                        <label class="radio-option">
+                            <input type="radio" name="resolution" value="4k">
+                            <span class="radio-label">4K — High Quality</span>
+                        </label>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Generate & Results Section -->
+    <!-- Generate Section -->
     <section class="section generate-section" data-section="3">
         <div class="container">
             <div class="section-header">
-                <h2 class="section-title">GENERATE &<br>RESULTS</h2>
+                <h2 class="section-title">GENERATE<br>& RESULTS</h2>
                 <div class="section-number">03</div>
             </div>
 
-            <div class="generate-controls">
-                <button class="generate-btn" id="generate-single">
-                    <span class="generate-btn-text">GENERATE 1×</span>
-                    <span class="generate-btn-sub">단일 무드컷 생성</span>
-                </button>
-                <button class="generate-btn generate-btn-primary" id="generate-batch">
-                    <span class="generate-btn-text">GENERATE 4×</span>
-                    <span class="generate-btn-sub">4가지 버전 배치 생성</span>
-                </button>
-            </div>
+            <div class="generate-content">
+                <div class="button-group">
+                    <button class="btn btn-primary" id="generate-single">
+                        <span class="btn-label">GENERATE 1×</span>
+                        <span class="btn-sublabel">단일 무드컷 생성</span>
+                    </button>
+                    <button class="btn btn-secondary" id="generate-batch">
+                        <span class="btn-label">GENERATE 4×</span>
+                        <span class="btn-sublabel">4가지 버전 배치 생성</span>
+                    </button>
+                </div>
 
-            <div class="results-container" id="results-container">
-                <!-- Results will be dynamically inserted here -->
+                <div class="results-container" id="results-container">
+                    <!-- Results will be injected here -->
+                </div>
             </div>
         </div>
     </section>
@@ -211,7 +201,9 @@
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-content">
             <div class="loading-spinner"></div>
-            <div class="loading-text">GENERATING IMAGES...</div>
+            <div class="loading-text">AI Processing</div>
+            <div class="loading-subtext">고품질 합성 처리 중...</div>
+            <div class="loading-team">TEAM CCP</div>
         </div>
     </div>
 
