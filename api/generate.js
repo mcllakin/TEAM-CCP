@@ -1,7 +1,5 @@
-// api/generate.js
 // ========================================
-// KAKAO THUMB AI - Flux Pro (4Ã—ç±  안정 반환)
-// - 병량 생성 + 결과 평택화 + 강제 배열 반환
+// KAKAO THUMB AI - Flux Pro (4× 안정 발한 + 3이미지 참조)
 // ========================================
 
 const Replicate = require("replicate");
@@ -36,12 +34,12 @@ module.exports = async (req, res) => {
     const { image_urls, query, image_size = "2k", count = 4 } = req.body || {};
 
     if (!image_urls || !Array.isArray(image_urls) || image_urls.length !== 3) {
-      return res.status(400).json({ success: false, error: "3개의 이미지(image_urls[3])가 필요합니다." });
+      return res.status(400).json({ success: false, error: "3개의 이미지가 필요합니다." });
     }
 
-    const safeCount = Math.max(1, Math.min(Number(count) || 4, 8)); // 1~8로 제한
+    const safeCount = Math.max(1, Math.min(Number(count) || 4, 8));
 
-    // ---------- helpers ----------
+    // ---------- Upload helper ----------
     async function uploadToImgbb(dataUri, name = "image") {
       const base64Data = String(dataUri).replace(/^data:image\/\w+;base64,/, "");
       const formData = new URLSearchParams();
@@ -56,27 +54,19 @@ module.exports = async (req, res) => {
       return j.data.url;
     }
 
-    // Replicate output에서 URL들을 최대한 안전하게 뽑아내는 함수
+    // Extract URLs helper
     function extractUrls(output) {
       const urls = [];
-
       if (!output) return urls;
-
-      // 1) 문자열이면 URL로 간주
       if (typeof output === "string") {
         urls.push(output);
         return urls;
       }
-
-      // 2) 배열이면 재귀적으로 평탄화
       if (Array.isArray(output)) {
         for (const item of output) urls.push(...extractUrls(item));
         return urls;
       }
-
-      // 3) 객체면 흔한 키들을 탐색
       if (typeof output === "object") {
-        // Replicate에서 종종 output 혹은 url 형태로 오는 케이스 대비
         if (typeof output.url === "string") urls.push(output.url);
         if (typeof output.image === "string") urls.push(output.image);
         if (typeof output.output === "string") urls.push(output.output);
@@ -84,33 +74,56 @@ module.exports = async (req, res) => {
         if (Array.isArray(output.images)) urls.push(...extractUrls(output.images));
         if (output.data) urls.push(...extractUrls(output.data));
       }
-
       return urls;
     }
 
-    // ---------- 1) Upload 3 images to public URLs ----------
+    // ---------- 1) Upload 3 images ----------
+    console.log("\ud83d\udce4 \uc774\ubbf8\uc9c0 \uc5c5\ub85c\ub4dc \uc911...");
     const [backgroundUrl, productUrl, compositionUrl] = await Promise.all([
       uploadToImgbb(image_urls[0], "background"),
       uploadToImgbb(image_urls[1], "product"),
       uploadToImgbb(image_urls[2], "composition"),
     ]);
+    console.log("\u2705 \uc774\ubbf8\uc9c0 \uc5c5\ub85c\ub4dc \uc644\ub8cc");
 
-    // ---------- 2) Replicate ----------
+    // ---------- 2) Master Prompt (3개 이미지 참조) ----------
+    const masterPrompt = `Professional product photography composition using three reference images:
+
+BACKGROUND REFERENCE:
+Analyze the background surface texture, color palette, lighting quality, and surface finish from the background reference image. Replicate these visual characteristics precisely without material assumptions.
+
+PRODUCT REFERENCE:
+SUNSHINE luxury cosmetic jar specifications:
+- Cylindrical cosmetic jar with transparent crystal-clear glass body
+- Pure white dome cap on top
+- Silver/chrome metallic label band
+- "SUNSHINE" branding clearly visible
+- Maintain exact proportions and details from product reference
+
+COMPOSITION REFERENCE:
+Follow the product placement, camera angle, viewing perspective, and spatial arrangement from the composition reference image.
+
+INTEGRATION:
+- Natural lighting matching background atmosphere
+- Realistic product shadows and glass reflections
+- Seamless photorealistic blending
+- Professional commercial quality
+
+${query || ""}`;
+
+    const negativePrompt = `material assumptions, wood texture, wooden background, fabric, metal surface, artistic interpretation, stylized rendering, wrong product shape, gold tones, bronze tones, opaque glass, decorative props, fantasy elements, glowing effects, low quality, blurry, distorted`;
+
+    // ---------- 3) Replicate ----------
     const replicate = new Replicate({ auth: replicateToken });
 
-    // 프롬프트는 최소 유지 (너가 이미 갖고 있는 masterPrompt/negativePrompt를 여기에 붙여넣어도 됨)
-    // 지금은 "4장" 문제 해결이 목표라서 짧게 유지.
-    const masterPrompt = `Create a professional product mood shot by harmonizing background, product, and composition reference images.
-- Use the 3 references for background look, product identity, and placement.
-- Photorealistic, commercial quality.
-${query || ""}`.trim();
-
     const runOnce = async (seed) => {
+      console.log(`\ud83c\udfa8 \uc0dd\uc131 \uc2dc\uc791 (seed: ${seed})`);
       const output = await replicate.run("black-forest-labs/flux-pro", {
         input: {
           prompt: masterPrompt,
-          // ⚠️ flux-pro는 기본적으로 "이미지 참조"를 직접 받지 못할 수 있어.
-          // 지금은 4장 반환 문제만 고치는 패치임.
+          negative_prompt: negativePrompt,
+          image: compositionUrl,  // ✅ 구도 참조 이미지
+          prompt_strength: 0.75,  // ✅ 참조 강도
           guidance: 3.5,
           num_outputs: 1,
           aspect_ratio: "1:1",
@@ -122,26 +135,29 @@ ${query || ""}`.trim();
       });
 
       const urls = extractUrls(output).filter(Boolean);
-      // 혹시 여러 개 나오면 첫 번째만 채택 (num_outputs:1이라 보통 1개)
-      return urls[0] || null;
+      const finalUrl = urls[0] || null;
+      if (finalUrl) {
+        console.log(`\u2705 \uc0dd\uc131 \uc644\ub8cc: ${finalUrl.substring(0, 50)}...`);
+      }
+      return finalUrl;
     };
 
-    // ---------- 3) Generate in parallel ----------
+    // ---------- 4) Parallel generation ----------
+    console.log(`\n\ud83d\ude80 ${safeCount}\uac1c \ubcd1\ub82c \uc0dd\uc131 \uc2dc\uc791...\n`);
     const seeds = Array.from({ length: safeCount }, () =>
       Math.floor(Math.random() * 2147483647)
     );
 
     const settled = await Promise.allSettled(seeds.map((s) => runOnce(s)));
 
-    // ---------- 4) Collect success URLs ----------
     let images = settled
       .filter((r) => r.status === "fulfilled")
       .map((r) => r.value)
       .filter(Boolean);
 
-    // ---------- 5) "가능한 한" 4장 채우기 (재시도 1회) ----------
-    // Replicate/네트워크 오류로 일부 null이면 한 번 더 부족분만 재시도
+    // ---------- 5) Retry if needed ----------
     if (images.length < safeCount) {
+      console.log(`\u26a0\ufe0f \ubd80\uc871\ubd84 \uc7ac\uc2dc\ub3c4: ${safeCount - images.length}\uac1c`);
       const need = safeCount - images.length;
       const retrySeeds = Array.from({ length: need }, () =>
         Math.floor(Math.random() * 2147483647)
@@ -155,33 +171,30 @@ ${query || ""}`.trim();
       images = images.concat(retryImages);
     }
 
-    // 최종적으로도 0장이면 실패 처리
     if (images.length === 0) {
       return res.status(500).json({
         success: false,
-        error: "Generation failed",
-        message: "모든 이미지 생성이 실패했습니다. Vercel/Replicate 로그를 확인해주세요.",
+        error: "모든 이미지 생성 실패",
       });
     }
 
-    // 최종: safeCount만큼만 자르기
     images = images.slice(0, safeCount);
+
+    console.log(`\n\ud83c\udf89 \ucd1d ${images.length}/${safeCount}\uac1c \uc644\ub8cc`);
+    console.log(`\ud83d\udcb0 \uc608\uc0c1 \ube44\uc6a9: $${(images.length * 0.055).toFixed(2)}`);
 
     return res.status(200).json({
       success: true,
-      images,                // ✅ 항상 배열
-      count: images.length,  // ✅ 실제 반환 개수
-      model: "black-forest-labs/flux-pro",
-      debug: {
-        requested: safeCount,
-        uploaded_refs: { backgroundUrl, productUrl, compositionUrl }, // 디버그용 (원하면 제거)
-      },
+      images,
+      count: images.length,
+      model: "Flux Pro (High Quality)",
+      message: `${images.length}개의 고품질 이미지 생성 완료`,
     });
   } catch (error) {
-    console.error("❌ server error:", error);
+    console.error("❌ 서버 에러:", error);
     return res.status(500).json({
       success: false,
-      error: "Server error",
+      error: "Generation failed",
       message: error.message || "Unknown error",
     });
   }
