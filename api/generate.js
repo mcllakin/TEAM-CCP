@@ -1,5 +1,5 @@
 // ========================================
-// KAKAO THUMB AI - Ideogram V2 Remix
+// KAKAO THUMB AI - Ideogram V2 Turbo
 // Best Quality for Product Mood Shots
 // ========================================
 
@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
             });
         }
 
-        console.log(`🎨 Ideogram V2 파이프라인 시작 (${count}장 생성)`);
+        console.log(`🎨 Ideogram V2 Turbo 파이프라인 시작 (${count}장 생성)`);
 
         // ========================================
         // Data URI를 imgbb에 업로드
@@ -98,135 +98,4 @@ module.exports = async (req, res) => {
         console.log('\n📤 이미지 업로드 중...');
         
         const [backgroundUrl, productUrl, compositionUrl] = await Promise.all([
-            uploadToImgbb(image_urls[0], 'background'),
-            uploadToImgbb(image_urls[1], 'product'),
-            uploadToImgbb(image_urls[2], 'composition')
-        ]);
-
-        console.log('✅ 모든 이미지 Public URL 변환 완료!\n');
-
-        // ========================================
-        // Replicate 초기화
-        // ========================================
-        const replicate = new Replicate({ auth: replicateToken });
-        
-        // Ideogram V2 Remix 모델
-        const ideogramModel = "ideogram-ai/ideogram-v2";
-
-        // ========================================
-        // 병렬 생성 (count만큼)
-        // ========================================
-        const generationPromises = [];
-
-        for (let i = 0; i < count; i++) {
-            generationPromises.push(
-                (async () => {
-                    try {
-                        console.log(`📸 [${i + 1}/${count}] 생성 시작`);
-
-                        // 상세 프롬프트
-                        const masterPrompt = `Professional product photography mood shot:
-
-Create a high-quality commercial product photograph by combining three reference images:
-
-BACKGROUND REFERENCE (Image 1):
-- Extract the warm wood texture and natural grain pattern
-- Capture the soft, diffused lighting from above
-- Maintain the ambient color temperature and warm tones
-- Preserve the luxurious, natural material aesthetic
-
-PRODUCT REFERENCE (Image 2):
-- Exact product: SUNSHINE cosmetic jar
-- Maintain transparent glass body with natural reflections
-- Preserve white cap on top
-- Keep the silver/chrome metallic label band
-- Match all product proportions and dimensions exactly
-- Preserve "SUNSHINE" branding text accurately
-
-COMPOSITION REFERENCE (Image 3):
-- Follow the exact product placement and position
-- Match the camera angle and perspective
-- Maintain the spatial arrangement
-- Preserve depth and dimensional relationships
-
-INTEGRATION REQUIREMENTS:
-- Seamlessly blend the SUNSHINE jar into the wood background
-- Generate natural shadows matching the lighting direction
-- Add subtle reflections on the glass surface from the environment
-- Ensure perfect color harmony between product and background
-- Create realistic ambient occlusion at the product base
-- Match shadow softness and light falloff naturally
-
-QUALITY STANDARDS:
-- Professional commercial photography grade
-- Ultra-high resolution with sharp details
-- Natural depth of field with gentle background blur
-- Magazine-quality output suitable for e-commerce
-- No composite artifacts or visible seams
-- Photorealistic rendering throughout
-
-${query}
-
-Output: A photorealistic product mood shot of the SUNSHINE cosmetic jar on warm wood background with perfect lighting and shadow integration.`;
-
-                        // Ideogram V2 Remix 실행
-                        const output = await replicate.run(ideogramModel, {
-                            input: {
-                                prompt: masterPrompt,
-                                image_file: compositionUrl,
-                                style_type: "Realistic",
-                                magic_prompt_option: "Auto",
-                                aspect_ratio: "1:1",
-                                output_format: "png",
-                                seed: Math.floor(Math.random() * 2147483647)
-                            }
-                        });
-
-                        // 디버깅 로그
-                        console.log(`  📊 Output type: ${Array.isArray(output) ? 'Array' : typeof output}`);
-                        console.log(`  📊 Output length: ${Array.isArray(output) ? output.length : 'N/A'}`);
-                        console.log(`  📊 Output value: ${JSON.stringify(output).substring(0, 100)}...`);
-
-                        const finalImage = Array.isArray(output) ? output[0] : output;
-                        
-                        console.log(`✅ [${i + 1}/${count}] 생성 완료: ${finalImage.substring(0, 50)}...`);
-                        return finalImage;
-
-                    } catch (error) {
-                        console.error(`❌ [${i + 1}/${count}] 실패:`, error.message);
-                        return null;
-                    }
-                })()
-            );
-        }
-
-        // 모든 생성 완료 대기
-        console.log(`\n⏳ ${count}장 병렬 생성 중...\n`);
-        const generatedImages = await Promise.all(generationPromises);
-        const successfulImages = generatedImages.filter(img => img !== null);
-
-        if (successfulImages.length === 0) {
-            console.error('❌ 모든 이미지 생성 실패');
-            throw new Error('이미지 생성 실패');
-        }
-
-        console.log(`\n🎉 총 ${successfulImages.length}/${count}개 완료`);
-        console.log(`📊 최종 배열:`, successfulImages);
-
-        return res.status(200).json({
-            success: true,
-            images: successfulImages,
-            count: successfulImages.length,
-            model: 'Ideogram V2 Remix (Best Quality)',
-            message: `${successfulImages.length}개의 최고 품질 이미지 생성 완료`
-        });
-
-    } catch (error) {
-        console.error('❌ 서버 에러:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Generation failed',
-            message: error.message || '이미지 생성 실패'
-        });
-    }
-};
+            uploadToImgbb(image_urls[0],<span class="cursor">█</span>
