@@ -1,9 +1,10 @@
 // ========================================
-// KAKAO THUMB AI - Flux Dev img2img Pipeline
-// High-Quality 3-Image Fusion
+// KAKAO THUMB AI - Flux Dev with imgbb Upload
+// Data URI → Public URL → High-Quality Generation
 // ========================================
 
 const Replicate = require('replicate');
+const fetch = require('node-fetch');
 
 module.exports = async (req, res) => {
     // CORS 설정
@@ -26,11 +27,21 @@ module.exports = async (req, res) => {
 
     try {
         const replicateToken = process.env.REPLICATE_API_TOKEN;
+        const imgbbApiKey = process.env.IMGBB_API_KEY;
+
         if (!replicateToken) {
             console.error('❌ REPLICATE_API_TOKEN not found');
             return res.status(500).json({
                 success: false,
-                error: 'API token not configured'
+                error: 'Replicate API token not configured'
+            });
+        }
+
+        if (!imgbbApiKey) {
+            console.error('❌ IMGBB_API_KEY not found');
+            return res.status(500).json({
+                success: false,
+                error: 'imgbb API key not configured'
             });
         }
 
@@ -43,17 +54,63 @@ module.exports = async (req, res) => {
             });
         }
 
-        const [backgroundUrl, productUrl, compositionUrl] = image_urls;
+        console.log('🎨 Flux Dev 파이프라인 시작 (imgbb 호스팅)');
 
-        console.log('🎨 Flux Dev img2img 파이프라인 시작:', {
-            count,
-            resolution: image_size,
-            prompt_length: query?.length || 0
-        });
+        // ========================================
+        // Data URI를 imgbb에 업로드하여 Public URL 얻기
+        // ========================================
+        async function uploadToImgbb(dataUri, name = 'image') {
+            try {
+                // Data URI에서 base64 부분만 추출
+                const base64Data = dataUri.replace(/^data:image\/\w+;base64,/, '');
+                
+                // imgbb API 호출
+                const formData = new URLSearchParams();
+                formData.append('key', imgbbApiKey);
+                formData.append('image', base64Data);
+                formData.append('name', name);
 
+                const response = await fetch('https://api.imgbb.com/1/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`imgbb upload failed: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error('imgbb API returned error');
+                }
+
+                console.log(`  ✅ ${name} 업로드 완료: ${data.data.url}`);
+                return data.data.url; // Public URL 반환
+
+            } catch (error) {
+                console.error(`  ❌ ${name} 업로드 실패:`, error.message);
+                throw error;
+            }
+        }
+
+        // ========================================
+        // 3개 이미지를 모두 imgbb에 업로드
+        // ========================================
+        console.log('\n📤 이미지 업로드 중...');
+        
+        const [backgroundUrl, productUrl, compositionUrl] = await Promise.all([
+            uploadToImgbb(image_urls[0], 'background'),
+            uploadToImgbb(image_urls[1], 'product'),
+            uploadToImgbb(image_urls[2], 'composition')
+        ]);
+
+        console.log('\n✅ 모든 이미지 Public URL 변환 완료!');
+
+        // ========================================
+        // Replicate 초기화
+        // ========================================
         const replicate = new Replicate({ auth: replicateToken });
-
-        // Flux Dev 모델 (img2img 지원!)
         const fluxDevModel = "black-forest-labs/flux-dev";
 
         // ========================================
@@ -67,10 +124,6 @@ module.exports = async (req, res) => {
                     try {
                         console.log(`\n📸 이미지 ${i + 1}/${count} 생성 시작`);
 
-                        // ========================================
-                        // 초강력 프롬프트 구성
-                        // ========================================
-                        
                         const masterPrompt = `Professional product mood shot creation:
 
 REFERENCE IMAGES PROVIDED:
@@ -80,23 +133,24 @@ REFERENCE IMAGES PROVIDED:
 
 SYNTHESIS INSTRUCTIONS:
 
-STEP 1 - ANALYZE COMPOSITION REFERENCE (Image #3):
-- Extract exact product position, angle, and scale
+STEP 1 - ANALYZE COMPOSITION REFERENCE:
+- Extract exact product position, angle, and scale from the reference image
 - Identify spatial relationships and perspective
-- Maintain the overall layout structure
+- Maintain the overall layout structure exactly as shown
 - Preserve the depth and dimensional arrangement
 
-STEP 2 - EXTRACT BACKGROUND ATMOSPHERE (Image #1):
-- Capture the warm wood texture and color palette
+STEP 2 - EXTRACT BACKGROUND ATMOSPHERE:
+- Capture the warm wood texture and color palette from background reference
 - Analyze lighting direction: soft, diffused from above
 - Note the ambient color temperature: warm neutral tones
 - Identify shadow characteristics: soft, subtle gradients
 
-STEP 3 - INTEGRATE PRODUCT (Image #2 - SUNSHINE jar):
-- Place the exact SUNSHINE cosmetic jar from the reference
+STEP 3 - INTEGRATE PRODUCT (SUNSHINE jar):
+- Place the exact SUNSHINE cosmetic jar as shown in product reference
 - Maintain silver metallic finish and cylindrical form
-- Preserve all product text and branding details
+- Preserve all product text: "SUNSHINE" branding
 - Keep the white cap and silver body distinction
+- Match the exact product shape and proportions
 
 LIGHTING & SHADOWS:
 - Match the soft, diffused lighting from Background Reference
@@ -122,16 +176,16 @@ ${query}
 
 Final result: A photorealistic product mood shot of the SUNSHINE cosmetic jar on warm wood background, with perfect lighting integration and commercial photography quality.`;
 
-                        const negativePrompt = "low quality, blurry, distorted, wrong product, different product, text errors, unrealistic shadows, harsh lighting, artificial composite, visible seams, pixelated, watermark, amateur photography, color mismatch, poor integration, deformed product, wrong colors";
+                        const negativePrompt = "low quality, blurry, distorted, wrong product, different product, wrong text, text errors, unrealistic shadows, harsh lighting, artificial composite, visible seams, pixelated, watermark, amateur photography, color mismatch, poor integration, deformed product, wrong colors, wrong branding";
 
-                        // Flux Dev img2img 실행
+                        // Flux Dev img2img 실행 (이제 Public URL 사용!)
                         const output = await replicate.run(fluxDevModel, {
                             input: {
                                 prompt: masterPrompt,
-                                image: compositionUrl, // Composition을 베이스로 사용
-                                prompt_strength: 0.80, // 프롬프트 강도
-                                num_inference_steps: 28, // Flux Dev 최적값
-                                guidance_scale: 3.5, // Flux 최적값
+                                image: compositionUrl, // ← Public URL!
+                                prompt_strength: 0.80,
+                                num_inference_steps: 28,
+                                guidance_scale: 3.5,
                                 output_format: "png",
                                 output_quality: 100,
                                 seed: Math.floor(Math.random() * 1000000)
@@ -152,7 +206,6 @@ Final result: A photorealistic product mood shot of the SUNSHINE cosmetic jar on
             );
         }
 
-        // 모든 생성 완료 대기
         const generatedImages = await Promise.all(generationPromises);
         const successfulImages = generatedImages.filter(img => img !== null);
 
@@ -167,7 +220,7 @@ Final result: A photorealistic product mood shot of the SUNSHINE cosmetic jar on
             success: true,
             images: successfulImages,
             count: successfulImages.length,
-            model: 'Flux Dev img2img (High-Quality Pipeline)',
+            model: 'Flux Dev img2img (imgbb hosted)',
             message: `${successfulImages.length}개의 고품질 이미지 생성 완료`
         });
 
