@@ -182,9 +182,14 @@ Output: A photorealistic product mood shot of the SUNSHINE cosmetic jar on warm 
                             }
                         });
 
+                        // 디버깅 로그
+                        console.log(`  📊 Output type: ${Array.isArray(output) ? 'Array' : typeof output}`);
+                        console.log(`  📊 Output length: ${Array.isArray(output) ? output.length : 'N/A'}`);
+                        console.log(`  📊 Output value: ${JSON.stringify(output).substring(0, 100)}...`);
+
                         const finalImage = Array.isArray(output) ? output[0] : output;
                         
-                        console.log(`✅ [${i + 1}/${count}] 생성 완료`);
+                        console.log(`✅ [${i + 1}/${count}] 생성 완료: ${finalImage.substring(0, 50)}...`);
                         return finalImage;
 
                     } catch (error) {
@@ -206,6 +211,7 @@ Output: A photorealistic product mood shot of the SUNSHINE cosmetic jar on warm 
         }
 
         console.log(`\n🎉 총 ${successfulImages.length}/${count}개 완료`);
+        console.log(`📊 최종 배열:`, successfulImages);
 
         return res.status(200).json({
             success: true,
