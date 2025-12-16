@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
     const imgbbApiKey = process.env.IMGBB_API_KEY;
 
     console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🎨 KAKAO THUMB AI - Image-Referenced Generation");
+    console.log("🎨 KAKAO THUMB AI - Flux Pro Generation");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
     if (!replicateToken) {
@@ -95,40 +95,61 @@ module.exports = async (req, res) => {
       uploadToImgbb(image_urls[2], "composition"),
     ]);
     console.log("✅ 업로드 완료\n");
-    console.log(`🔗 업로드된 URL:`);
+    console.log(`🔗 참조 이미지 URL:`);
     console.log(`   Background: ${backgroundUrl}`);
     console.log(`   Product: ${productUrl}`);
     console.log(`   Composition: ${compositionUrl}\n`);
 
-    // Master Prompt - 이미지 URL 직접 명시
-    const masterPrompt = `Create a professional product mood shot by combining these three reference images:
+    // Master Prompt - 매우 상세하게
+    const masterPrompt = `Professional product photography mood shot.
 
-[BACKGROUND IMAGE URL]: ${backgroundUrl}
-INSTRUCTIONS: Use this EXACT background surface. Copy the surface texture, color palette, lighting atmosphere, and material appearance AS-IS from this image. Do NOT generate new backgrounds or interpret materials.
+REFERENCE IMAGES (analyze these carefully):
+1. Background image at ${backgroundUrl} - shows the surface texture, material, color palette, and lighting atmosphere
+2. Product image at ${productUrl} - shows SUNSHINE luxury cosmetic jar with transparent glass body, white dome cap, silver metallic band
+3. Composition image at ${compositionUrl} - shows the desired product placement and camera angle
 
-[PRODUCT IMAGE URL]: ${productUrl}
-INSTRUCTIONS: Use this EXACT product. This is a SUNSHINE luxury cosmetic jar with transparent glass body, white cap, and silver metallic band. Maintain the EXACT proportions, shape, transparency, and all product details from this image.
+TASK:
+Create a photorealistic product image by placing the SUNSHINE cosmetic jar on the background surface, following the composition reference.
 
-[COMPOSITION IMAGE URL]: ${compositionUrl}
-INSTRUCTIONS: Follow this EXACT composition layout. Copy the product placement, camera angle, viewing perspective, and spatial arrangement from this reference.
+BACKGROUND REQUIREMENTS:
+- Replicate the EXACT surface texture visible in the background reference
+- Match the EXACT color palette and tones
+- Preserve the lighting atmosphere and quality
+- Copy the surface material characteristics precisely
+- DO NOT interpret or assume materials - use what you see
 
-CRITICAL REQUIREMENTS:
-1. BACKGROUND: Must be identical to the background image provided - same texture, same colors, same lighting
-2. PRODUCT: Must be identical to the product image provided - same shape, same materials, same branding
-3. COMPOSITION: Must follow the layout shown in composition image
-4. INTEGRATION: Place the product naturally on the background with realistic shadows and reflections
-5. LIGHTING: Match the lighting from the background image
-6. QUALITY: Professional commercial photography, photorealistic, 8K detail
+PRODUCT REQUIREMENTS:
+- SUNSHINE luxury cosmetic jar (from product reference)
+- Cylindrical transparent crystal-clear glass body
+- Pure white dome cap on top
+- Silver/chrome metallic label band with "SUNSHINE" branding
+- Maintain EXACT proportions from product reference
+- Glass must be completely transparent showing background through it
 
-DO NOT:
-- Generate different backgrounds than shown in background image
-- Create artistic interpretations or stylized versions
-- Change product shape, color, or proportions
-- Add decorative elements not present in references
+COMPOSITION REQUIREMENTS:
+- Follow the product placement from composition reference
+- Match the camera angle and perspective
+- Copy the viewing distance and framing
+- Preserve the spatial arrangement
+
+INTEGRATION:
+- Natural lighting matching background atmosphere
+- Realistic cast shadows on the surface
+- Glass reflections showing the background texture
+- Proper light transmission through transparent glass
+- Seamless photorealistic blending
+- Professional commercial photography quality
+- 8K detail, sharp focus, perfect clarity
+
+CRITICAL:
+- Use the background AS-IS without artistic interpretation
+- Maintain product identity and proportions exactly
+- No added props, no decorative elements
+- Pure commercial product photography style
 
 ${query || ""}`;
 
-    const negativePrompt = `different background, different product, wrong composition, artistic interpretation, stylized rendering, cartoon, painting, illustration, wrong materials, wrong colors, wrong proportions, low quality, blurry, distorted, ugly, deformed`;
+    const negativePrompt = `artistic interpretation, stylized rendering, different background, different surface, wrong material, wrong texture, cartoon style, painting, illustration, wrong product shape, opaque glass, colored glass, wrong cap color, wrong label, decorative elements, props, flowers, leaves, fantasy elements, glowing effects, unrealistic lighting, low quality, blurry, distorted, ugly, deformed, wrong proportions, wrong colors`;
 
     // Initialize Replicate
     const replicate = new Replicate({ auth: replicateToken });
@@ -144,8 +165,8 @@ ${query || ""}`;
             prompt: masterPrompt,
             negative_prompt: negativePrompt,
             image: compositionUrl,
-            prompt_strength: 0.8,  // 이미지 참조 강도 증가
-            guidance: 4.0,  // 가이던스 증가
+            prompt_strength: 0.75,
+            guidance: 3.5,
             num_outputs: 1,
             aspect_ratio: "1:1",
             output_format: "png",
@@ -226,8 +247,8 @@ ${query || ""}`;
       success: true,
       images: images,
       count: images.length,
-      model: "Flux Pro (Image-Referenced)",
-      message: `${images.length}개 이미지 생성 완료 (이미지 참조 모드)`,
+      model: "Flux Pro (High Quality)",
+      message: `${images.length}개 이미지 생성 완료`,
     });
   } catch (error) {
     console.error("\n❌ 최상위 에러:", error);
