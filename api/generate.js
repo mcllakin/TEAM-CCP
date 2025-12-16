@@ -1,5 +1,5 @@
 // ========================================
-// KAKAO THUMB AI - Flux Pro (4× 안정 발한 + 3이미지 참조)
+// KAKAO THUMB AI - Flux Pro (4× 안정 반환 + 3이미지 참조)
 // ========================================
 
 const Replicate = require("replicate");
@@ -78,13 +78,13 @@ module.exports = async (req, res) => {
     }
 
     // ---------- 1) Upload 3 images ----------
-    console.log("\ud83d\udce4 \uc774\ubbf8\uc9c0 \uc5c5\ub85c\ub4dc \uc911...");
+    console.log("📤 이미지 업로드 중...");
     const [backgroundUrl, productUrl, compositionUrl] = await Promise.all([
       uploadToImgbb(image_urls[0], "background"),
       uploadToImgbb(image_urls[1], "product"),
       uploadToImgbb(image_urls[2], "composition"),
     ]);
-    console.log("\u2705 \uc774\ubbf8\uc9c0 \uc5c5\ub85c\ub4dc \uc644\ub8cc");
+    console.log("✅ 이미지 업로드 완료");
 
     // ---------- 2) Master Prompt (3개 이미지 참조) ----------
     const masterPrompt = `Professional product photography composition using three reference images:
@@ -117,7 +117,7 @@ ${query || ""}`;
     const replicate = new Replicate({ auth: replicateToken });
 
     const runOnce = async (seed) => {
-      console.log(`\ud83c\udfa8 \uc0dd\uc131 \uc2dc\uc791 (seed: ${seed})`);
+      console.log(`🎨 생성 시작 (seed: ${seed})`);
       const output = await replicate.run("black-forest-labs/flux-pro", {
         input: {
           prompt: masterPrompt,
@@ -137,13 +137,13 @@ ${query || ""}`;
       const urls = extractUrls(output).filter(Boolean);
       const finalUrl = urls[0] || null;
       if (finalUrl) {
-        console.log(`\u2705 \uc0dd\uc131 \uc644\ub8cc: ${finalUrl.substring(0, 50)}...`);
+        console.log(`✅ 생성 완료: ${finalUrl.substring(0, 50)}...`);
       }
       return finalUrl;
     };
 
     // ---------- 4) Parallel generation ----------
-    console.log(`\n\ud83d\ude80 ${safeCount}\uac1c \ubcd1\ub82c \uc0dd\uc131 \uc2dc\uc791...\n`);
+    console.log(`\n🚀 ${safeCount}개 병렬 생성 시작...\n`);
     const seeds = Array.from({ length: safeCount }, () =>
       Math.floor(Math.random() * 2147483647)
     );
@@ -157,7 +157,7 @@ ${query || ""}`;
 
     // ---------- 5) Retry if needed ----------
     if (images.length < safeCount) {
-      console.log(`\u26a0\ufe0f \ubd80\uc871\ubd84 \uc7ac\uc2dc\ub3c4: ${safeCount - images.length}\uac1c`);
+      console.log(`⚠️ 부족분 재시도: ${safeCount - images.length}개`);
       const need = safeCount - images.length;
       const retrySeeds = Array.from({ length: need }, () =>
         Math.floor(Math.random() * 2147483647)
@@ -180,8 +180,8 @@ ${query || ""}`;
 
     images = images.slice(0, safeCount);
 
-    console.log(`\n\ud83c\udf89 \ucd1d ${images.length}/${safeCount}\uac1c \uc644\ub8cc`);
-    console.log(`\ud83d\udcb0 \uc608\uc0c1 \ube44\uc6a9: $${(images.length * 0.055).toFixed(2)}`);
+    console.log(`\n🎉 총 ${images.length}/${safeCount}개 완료`);
+    console.log(`💰 예상 비용: $${(images.length * 0.055).toFixed(2)}`);
 
     return res.status(200).json({
       success: true,
