@@ -45,6 +45,7 @@ module.exports = async (req, res) => {
             });
         }
 
+        
         const { image_urls, query, image_size = '2k', count = 4 } = req.body;
 
         if (!image_urls || !Array.isArray(image_urls) || image_urls.length !== 3) {
