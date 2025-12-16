@@ -1,5 +1,5 @@
 // ========================================
-// KAKAO THUMB AI - Ideogram V2 Turbo
+// KAKAO THUMB AI - Ideogram V2 Remix
 // Best Quality for Product Mood Shots
 // ========================================
 
@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
             });
         }
 
-        console.log(`🎨 Ideogram V2 Turbo 파이프라인 시작 (${count}장 생성)`);
+        console.log(`🎨 Ideogram V2 파이프라인 시작 (${count}장 생성)`);
 
         // ========================================
         // Data URI를 imgbb에 업로드
@@ -110,7 +110,7 @@ module.exports = async (req, res) => {
         // ========================================
         const replicate = new Replicate({ auth: replicateToken });
         
-        // Ideogram V2 Turbo 모델
+        // Ideogram V2 Turbo 모델 (정확한 경로)
         const ideogramModel = "ideogram-ai/ideogram-v2-turbo";
 
         // ========================================
@@ -128,16 +128,19 @@ module.exports = async (req, res) => {
 YOU MUST PRESERVE 90% OF THE REFERENCE IMAGES. DO NOT CREATE NEW ELEMENTS.
 
 ═══════════════════════════════════════════════════════════
-IMAGE 1 - BACKGROUND REFERENCE (PRESERVE 90%):
+IMAGE 1 - BACKGROUND REFERENCE (PRESERVE 95%):
 ═══════════════════════════════════════════════════════════
 MANDATORY REQUIREMENTS:
-✓ EXACTLY replicate the wood grain texture and pattern from Image 1
-✓ PRESERVE the specific wood color: warm honey-brown tones
-✓ MAINTAIN the exact surface texture: natural wood grain lines
-✓ KEEP the lighting angle and intensity IDENTICAL to Image 1
-✓ DO NOT change background material - MUST be natural wood
-✓ DO NOT add new background elements
-✓ MATCH shadow patterns and ambient lighting from Image 1
+✓ ANALYZE Image 1 and EXTRACT its EXACT surface texture AS-IS
+✓ REPLICATE WHATEVER surface pattern exists in Image 1 (grid, smooth, rough, etc.)
+✓ PRESERVE the EXACT color tones visible in Image 1 background
+✓ MAINTAIN WHATEVER surface material appears in Image 1 (do not assume)
+✓ KEEP the EXACT lighting angle, intensity, and shadows from Image 1
+✓ DO NOT interpret what material it is - just COPY what you SEE
+✓ DO NOT substitute or assume materials (wood, fabric, metal, etc.)
+✓ DO NOT add patterns not present in Image 1
+✓ DO NOT change the surface appearance based on assumptions
+✓ USE Image 1's visual texture DIRECTLY - no material assumptions
 
 ═══════════════════════════════════════════════════════════
 IMAGE 2 - PRODUCT REFERENCE (PRESERVE 95%):
@@ -175,9 +178,9 @@ LIGHTING & SHADOW INTEGRATION:
 ═══════════════════════════════════════════════════════════
 ✓ Shadows MUST match the natural lighting direction from Image 1
 ✓ Shadow softness MUST replicate Image 1's ambient light quality
-✓ Glass reflections MUST show wood texture from background
+✓ Glass reflections MUST show WHATEVER texture is visible in Image 1 background
 ✓ Ambient occlusion at product base MUST be natural and subtle
-✓ Color temperature MUST remain consistent with Image 1 (warm tones)
+✓ Color temperature MUST remain consistent with Image 1
 
 ═══════════════════════════════════════════════════════════
 ABSOLUTE PROHIBITIONS (DO NOT DO):
@@ -186,7 +189,8 @@ ABSOLUTE PROHIBITIONS (DO NOT DO):
 ✗ DO NOT change transparent glass to opaque/colored materials
 ✗ DO NOT change silver label to gold/bronze/copper/rose gold
 ✗ DO NOT change white cap to cream/beige/colored cap
-✗ DO NOT change wood background to stone/concrete/fabric
+✗ DO NOT assume background is wood/fabric/metal - use Image 1 AS-IS
+✗ DO NOT interpret material type - just replicate visual texture from Image 1
 ✗ DO NOT add decorative objects not present in references
 ✗ DO NOT change "SUNSHINE" text to other words
 ✗ DO NOT create artistic/stylized interpretations
@@ -198,12 +202,13 @@ FINAL OUTPUT REQUIREMENTS:
 - Photorealistic commercial product photography
 - SUNSHINE jar with EXACT specifications from Image 2
 - Positioned EXACTLY as shown in Image 3
-- Background EXACTLY matching Image 1's wood texture
+- Background EXACTLY COPIED from Image 1 (no interpretation, direct replication)
 - Natural lighting integration with realistic shadows
 - Professional e-commerce quality suitable for luxury cosmetics
 - Zero artistic interpretation - STRICT reference adherence
 
-YOU ARE CREATING A REFERENCE-ACCURATE PRODUCT PHOTOGRAPH, NOT AN ARTISTIC INTERPRETATION.`;
+YOU ARE CREATING A REFERENCE-ACCURATE PRODUCT PHOTOGRAPH, NOT AN ARTISTIC INTERPRETATION.
+DO NOT GUESS MATERIALS - USE EXACTLY WHAT YOU SEE IN THE REFERENCE IMAGES.`;
 
                 // Ideogram V2 Turbo 실행 (강력한 설정)
                 const output = await replicate.run(ideogramModel, {
@@ -212,7 +217,7 @@ YOU ARE CREATING A REFERENCE-ACCURATE PRODUCT PHOTOGRAPH, NOT AN ARTISTIC INTERP
                         negative_prompt: "artistic interpretation, stylized, abstract, different product, wrong colors, gold jar, bronze jar, copper jar, rose gold, opaque glass, colored glass, rounded jar, bowl shape, vase shape, cream cap, beige cap, colored cap, stone background, concrete background, marble background, fabric background, decorative objects, props, flowers, leaves, fantasy elements, glowing effects, neon lights, bokeh lights, unrealistic, cartoon, anime, painting, sketch, watercolor, low quality, blurry, distorted, deformed product, wrong text, no SUNSHINE text, different branding, wrong product shape",
                         image_file: compositionUrl,
                         style_type: "Realistic",
-                        magic_prompt_option: "Off",
+                        magic_prompt_option: "Off", // 프롬프트 자동 수정 끄기!
                         aspect_ratio: "1:1",
                         output_format: "png",
                         seed: Math.floor(Math.random() * 2147483647)
@@ -250,7 +255,7 @@ YOU ARE CREATING A REFERENCE-ACCURATE PRODUCT PHOTOGRAPH, NOT AN ARTISTIC INTERP
             success: true,
             images: successfulImages,
             count: successfulImages.length,
-            model: 'Ideogram V2 Turbo (Ultra Strong Prompt)',
+            model: 'Ideogram V2 Remix (Best Quality)',
             message: `${successfulImages.length}개의 최고 품질 이미지 생성 완료`
         });
 
