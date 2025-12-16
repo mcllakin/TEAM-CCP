@@ -1,5 +1,5 @@
 // ========================================
-// KAKAO THUMB AI - Flux Pro (최종 안정 버전)
+// KAKAO THUMB AI - Flux Pro (이미지 직접 참조)
 // ========================================
 
 const Replicate = require("replicate");
@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
     const imgbbApiKey = process.env.IMGBB_API_KEY;
 
     console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🎨 KAKAO THUMB AI - Flux Pro Generation");
+    console.log("🎨 KAKAO THUMB AI - Image-Referenced Generation");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
     if (!replicateToken) {
@@ -95,34 +95,40 @@ module.exports = async (req, res) => {
       uploadToImgbb(image_urls[2], "composition"),
     ]);
     console.log("✅ 업로드 완료\n");
+    console.log(`🔗 업로드된 URL:`);
+    console.log(`   Background: ${backgroundUrl}`);
+    console.log(`   Product: ${productUrl}`);
+    console.log(`   Composition: ${compositionUrl}\n`);
 
-    // Master Prompt
-    const masterPrompt = `Professional product photography composition.
+    // Master Prompt - 이미지 URL 직접 명시
+    const masterPrompt = `Create a professional product mood shot by combining these three reference images:
 
-BACKGROUND REFERENCE (Image 1):
-Analyze the surface texture, color palette, lighting, and atmosphere. Replicate these visual characteristics precisely without material assumptions.
+[BACKGROUND IMAGE URL]: ${backgroundUrl}
+INSTRUCTIONS: Use this EXACT background surface. Copy the surface texture, color palette, lighting atmosphere, and material appearance AS-IS from this image. Do NOT generate new backgrounds or interpret materials.
 
-PRODUCT REFERENCE (Image 2):
-SUNSHINE luxury cosmetic jar:
-- Cylindrical transparent crystal-clear glass body
-- Pure white dome cap
-- Silver/chrome metallic label band
-- "SUNSHINE" branding visible
-- Maintain exact proportions and details
+[PRODUCT IMAGE URL]: ${productUrl}
+INSTRUCTIONS: Use this EXACT product. This is a SUNSHINE luxury cosmetic jar with transparent glass body, white cap, and silver metallic band. Maintain the EXACT proportions, shape, transparency, and all product details from this image.
 
-COMPOSITION REFERENCE (Image 3):
-Follow the product placement, camera angle, and spatial arrangement shown in this reference.
+[COMPOSITION IMAGE URL]: ${compositionUrl}
+INSTRUCTIONS: Follow this EXACT composition layout. Copy the product placement, camera angle, viewing perspective, and spatial arrangement from this reference.
 
-INTEGRATION REQUIREMENTS:
-- Natural lighting matching background atmosphere
-- Realistic shadows and glass reflections showing background texture
-- Seamless photorealistic blending
-- Professional commercial photography quality
-- NO artistic interpretation or material assumptions
+CRITICAL REQUIREMENTS:
+1. BACKGROUND: Must be identical to the background image provided - same texture, same colors, same lighting
+2. PRODUCT: Must be identical to the product image provided - same shape, same materials, same branding
+3. COMPOSITION: Must follow the layout shown in composition image
+4. INTEGRATION: Place the product naturally on the background with realistic shadows and reflections
+5. LIGHTING: Match the lighting from the background image
+6. QUALITY: Professional commercial photography, photorealistic, 8K detail
+
+DO NOT:
+- Generate different backgrounds than shown in background image
+- Create artistic interpretations or stylized versions
+- Change product shape, color, or proportions
+- Add decorative elements not present in references
 
 ${query || ""}`;
 
-    const negativePrompt = `material assumptions, wood texture, wooden surface, fabric texture, metal assumptions, artistic interpretation, stylized rendering, wrong product shape, opaque glass, fantasy elements, glowing effects, low quality, blurry, distorted, wrong proportions`;
+    const negativePrompt = `different background, different product, wrong composition, artistic interpretation, stylized rendering, cartoon, painting, illustration, wrong materials, wrong colors, wrong proportions, low quality, blurry, distorted, ugly, deformed`;
 
     // Initialize Replicate
     const replicate = new Replicate({ auth: replicateToken });
@@ -138,8 +144,8 @@ ${query || ""}`;
             prompt: masterPrompt,
             negative_prompt: negativePrompt,
             image: compositionUrl,
-            prompt_strength: 0.75,
-            guidance: 3.5,
+            prompt_strength: 0.8,  // 이미지 참조 강도 증가
+            guidance: 4.0,  // 가이던스 증가
             num_outputs: 1,
             aspect_ratio: "1:1",
             output_format: "png",
@@ -220,8 +226,8 @@ ${query || ""}`;
       success: true,
       images: images,
       count: images.length,
-      model: "Flux Pro (High Quality)",
-      message: `${images.length}개 이미지 생성 완료`,
+      model: "Flux Pro (Image-Referenced)",
+      message: `${images.length}개 이미지 생성 완료 (이미지 참조 모드)`,
     });
   } catch (error) {
     console.error("\n❌ 최상위 에러:", error);
