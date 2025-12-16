@@ -1,5 +1,5 @@
 // ========================================
-// KAKAO THUMB AI - Flux Pro (Verified)
+// KAKAO THUMB AI - Flux Pro (Parallel)
 // Multi-Image Reference + High Quality
 // ========================================
 
@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
             });
         }
 
-        console.log(`🎨 Flux Pro 파이프라인 시작 (${count}장 생성)`);
+        console.log(`🎨 Flux Pro 파이프라인 시작 (${count}장 병렬 생성)`);
 
         // ========================================
         // Data URI를 imgbb에 업로드
@@ -111,16 +111,10 @@ module.exports = async (req, res) => {
         const replicate = new Replicate({ auth: replicateToken });
 
         // ========================================
-        // Flux Pro 순차 생성
+        // 프롬프트 생성 함수
         // ========================================
-        const successfulImages = [];
-
-        for (let i = 0; i < count; i++) {
-            try {
-                console.log(`\n📸 [${i + 1}/${count}] 생성 시작`);
-
-                // 초정밀 프롬프트 (배경 질감 가정 제거)
-                const masterPrompt = `Professional product photography composition using three reference images:
+        function buildMasterPrompt(query) {
+            return `Professional product photography composition using three reference images:
 
 BACKGROUND TEXTURE ANALYSIS (Image 1 - Critical):
 Examine the background surface in Image 1 and replicate its EXACT visual appearance without making ANY material assumptions:
@@ -172,38 +166,49 @@ QUALITY STANDARDS:
 ${query}
 
 FINAL INSTRUCTION: Create a reference-accurate product photograph by precisely following the three input images. Do not add artistic interpretation, material assumptions, or creative variations. Replicate the visual information directly and accurately for professional commercial use.`;
-
-                const negativePrompt = `material assumptions, wood texture, wooden surface, wooden background, bamboo texture, bamboo surface, woven wood, wood grain, timber, hardwood, plywood, fabric texture, fabric background, textile, cloth, canvas, linen, metal surface, metallic background, brushed metal, stone texture, concrete surface, marble background, artistic interpretation, stylized rendering, abstract composition, illustration style, painting effect, wrong product shape, spherical jar, rounded jar, bowl-shaped container, vase shape, bottle shape, gold jar, golden container, bronze tones, copper finish, rose gold, champagne gold, opaque glass, frosted glass, colored glass, tinted glass, translucent glass, milky glass, cream-colored cap, beige cap, off-white cap, colored cap, transparent cap, decorative elements, props, accessories, flowers, leaves, branches, petals, stones, crystals, fabric draping, ribbons, boxes, fantasy elements, magical effects, glowing effects, light rays, lens flare, bokeh lights, neon accents, sparkles, unrealistic lighting, dramatic shadows, high contrast, oversaturation, cartoon style, anime style, manga style, comic art, watercolor, oil painting, sketch, drawing, illustration, CGI look, 3D render look, low quality, blurry, pixelated, distorted proportions, deformed product, wrong dimensions, incorrect text, missing text, different branding, wrong logo, material guessing`;
-
-                const output = await replicate.run(
-                    "black-forest-labs/flux-pro",
-                    {
-                        input: {
-                            prompt: masterPrompt,
-                            guidance: 3.5,
-                            num_outputs: 1,
-                            aspect_ratio: "1:1",
-                            output_format: "png",
-                            output_quality: 100,
-                            prompt_upsampling: false,
-                            seed: Math.floor(Math.random() * 2147483647)
-                        }
-                    }
-                );
-
-                const finalImage = Array.isArray(output) ? output[0] : output;
-                
-                if (finalImage) {
-                    successfulImages.push(finalImage);
-                    console.log(`✅ [${i + 1}/${count}] 생성 완료: ${finalImage.substring(0, 50)}...`);
-                } else {
-                    console.error(`❌ [${i + 1}/${count}] 결과 없음`);
-                }
-
-            } catch (error) {
-                console.error(`❌ [${i + 1}/${count}] 실패:`, error.message);
-            }
         }
+
+        const negativePrompt = `material assumptions, wood texture, wooden surface, wooden background, bamboo texture, bamboo surface, woven wood, wood grain, timber, hardwood, plywood, fabric texture, fabric background, textile, cloth, canvas, linen, metal surface, metallic background, brushed metal, stone texture, concrete surface, marble background, artistic interpretation, stylized rendering, abstract composition, illustration style, painting effect, wrong product shape, spherical jar, rounded jar, bowl-shaped container, vase shape, bottle shape, gold jar, golden container, bronze tones, copper finish, rose gold, champagne gold, opaque glass, frosted glass, colored glass, tinted glass, translucent glass, milky glass, cream-colored cap, beige cap, off-white cap, colored cap, transparent cap, decorative elements, props, accessories, flowers, leaves, branches, petals, stones, crystals, fabric draping, ribbons, boxes, fantasy elements, magical effects, glowing effects, light rays, lens flare, bokeh lights, neon accents, sparkles, unrealistic lighting, dramatic shadows, high contrast, oversaturation, cartoon style, anime style, manga style, comic art, watercolor, oil painting, sketch, drawing, illustration, CGI look, 3D render look, low quality, blurry, pixelated, distorted proportions, deformed product, wrong dimensions, incorrect text, missing text, different branding, wrong logo, material guessing`;
+
+        // ========================================
+        // 병렬 생성 (Promise.all 사용)
+        // ========================================
+        console.log(`\n🚀 ${count}장 병렬 생성 시작...\n`);
+
+        const generationPromises = [];
+
+        for (let i = 0; i < count; i++) {
+            const promise = replicate.run(
+                "black-forest-labs/flux-pro",
+                {
+                    input: {
+                        prompt: buildMasterPrompt(query),
+                        guidance: 3.5,
+                        num_outputs: 1,
+                        aspect_ratio: "1:1",
+                        output_format: "png",
+                        output_quality: 100,
+                        prompt_upsampling: false,
+                        seed: Math.floor(Math.random() * 2147483647)
+                    }
+                }
+            ).then(output => {
+                const finalImage = Array.isArray(output) ? output[0] : output;
+                console.log(`✅ [${i + 1}/${count}] 생성 완료: ${finalImage ? finalImage.substring(0, 50) + '...' : 'null'}`);
+                return finalImage;
+            }).catch(error => {
+                console.error(`❌ [${i + 1}/${count}] 실패:`, error.message);
+                return null;
+            });
+
+            generationPromises.push(promise);
+        }
+
+        // 모든 생성 완료 대기
+        const results = await Promise.all(generationPromises);
+
+        // null 제거
+        const successfulImages = results.filter(img => img !== null);
 
         if (successfulImages.length === 0) {
             console.error('❌ 모든 이미지 생성 실패');
