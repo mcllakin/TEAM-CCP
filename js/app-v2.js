@@ -1,284 +1,331 @@
 // ========================================
-// KAKAO THUMB AI — Application Logic
+// KAKAO THUMB AI — Composition-Locked Application Logic
 // ========================================
 
-// State Management
+const MAX_PRODUCTS = 3;
+const MAX_FILE_SIZE = 12 * 1024 * 1024; // 12MB before resize
+const MAX_IMAGE_EDGE = 1600;
+const JPEG_QUALITY = 0.88;
+
 const state = {
     images: {
-        background: null,
-        product: null,
-        composition: null
+        compositionGuide: null,
+        backgroundReference: null,
+        productSources: []
     },
     options: {
-        moodIntensity: 7,
-        productPreservation: 8,
-        resolution: '2k'
+        resolution: '2k',
+        variations: 1,
+        additionalDirection: ''
     }
 };
 
-// ========== INITIALIZATION ==========
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 KAKAO THUMB AI - Initializing...');
+    console.log('🚀 KAKAO THUMB AI - Composition Locked Mode');
     initializeNavigation();
     initializeUploads();
-    initializeSliders();
     initializeRadios();
-    initializeGenerateButtons();
-    console.log('✅ Initialization complete');
+    initializeDirectionTextarea();
+    initializeGenerateButton();
 });
 
 // ========== NAVIGATION ==========
 function initializeNavigation() {
     const navNumbers = document.querySelectorAll('.nav-number');
-    
+
     navNumbers.forEach(nav => {
         nav.addEventListener('click', () => {
             const sectionId = nav.dataset.section;
             const section = document.querySelector(`[data-section="${sectionId}"]`);
-            
-            if (section) {
-                // Update active state
-                navNumbers.forEach(n => n.classList.remove('active'));
-                nav.classList.add('active');
-                
-                // Smooth scroll
-                section.scrollIntoView({ behavior: 'smooth' });
-            }
+            if (!section) return;
+
+            navNumbers.forEach(n => n.classList.remove('active'));
+            nav.classList.add('active');
+            section.scrollIntoView({ behavior: 'smooth' });
         });
     });
-    
-    // Scroll spy
+
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const sectionId = entry.target.dataset.section;
-                navNumbers.forEach(n => {
-                    n.classList.toggle('active', n.dataset.section === sectionId);
-                });
-            }
+            if (!entry.isIntersecting) return;
+            const sectionId = entry.target.dataset.section;
+            navNumbers.forEach(n => {
+                n.classList.toggle('active', n.dataset.section === sectionId);
+            });
         });
-    }, { threshold: 0.5 });
-    
-    document.querySelectorAll('[data-section]').forEach(section => {
-        observer.observe(section);
-    });
+    }, { threshold: 0.45 });
+
+    document.querySelectorAll('[data-section]').forEach(section => observer.observe(section));
 }
 
 // ========== IMAGE UPLOAD ==========
 function initializeUploads() {
-    const uploads = ['background', 'product', 'composition'];
-    
-    uploads.forEach(type => {
-        const input = document.getElementById(`upload-${type}`);
-        const preview = document.getElementById(`preview-${type}`);
-        const box = document.querySelector(`[data-upload="${type}"]`);
-        
-        if (!input || !preview || !box) return;
-        
-        // Click on entire box to trigger file input
-        box.addEventListener('click', (e) => {
-            console.log('📦 Upload box clicked:', type);
-            // Prevent triggering when clicking buttons
-            if (!e.target.closest('.upload-btn')) {
-                console.log('🖱️ Triggering file input...');
-                input.click();
-            }
-        });
-        
-        input.addEventListener('change', (e) => {
-    console.log('📁 File input changed:', type);
-    const file = e.target.files[0];
-    if (!file) {
-        console.log('⚠️ No file selected');
-        return;
-    }
-    
-    console.log('📄 File:', file.name, file.type, file.size);
-    
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-        alert('이미지 파일만 업로드 가능합니다.');
-        return;
-    }
-    
-    // Validate file size (5MB for Base64 encoding)
-    if (file.size > 5 * 1024 * 1024) {
-        alert('파일 크기는 5MB 이하여야 합니다.\n더 작은 이미지를 사용하거나 압축해주세요.');
-        return;
-    }
-    
-    console.log('⏳ Reading and resizing file...');
-    
-    // Read and resize image
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-            // Resize image if too large
-            const maxWidth = 1024;
-            const maxHeight = 1024;
-            let width = img.width;
-            let height = img.height;
-            
-            if (width > maxWidth || height > maxHeight) {
-                if (width > height) {
-                    height = (height / width) * maxWidth;
-                    width = maxWidth;
-                } else {
-                    width = (width / height) * maxHeight;
-                    height = maxHeight;
-                }
-            }
-            
-            // Create canvas and resize
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // Convert to base64 with compression
-            const resizedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-            
-            console.log('Original size:', file.size, 'bytes');
-            console.log('Resized base64 length:', resizedBase64.length, 'chars');
-            
-            state.images[type] = resizedBase64;
-            preview.style.backgroundImage = `url(${resizedBase64})`;
-            box.classList.add('has-image');
-            
-            console.log(`✅ ${type} 이미지 업로드 완료 (리사이즈됨)`);
-        };
-        img.src = event.target.result;
-    };
-    reader.onerror = (error) => {
-        console.error('❌ File read error:', error);
-        alert('파일 읽기 실패: ' + error);
-    };
-    reader.readAsDataURL(file);
-});
+    initializeSingleUpload('compositionGuide');
+    initializeSingleUpload('backgroundReference');
+    initializeProductUpload();
 
-        
-        // Add drag & drop
-        box.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            box.style.background = 'rgba(255, 255, 255, 0.05)';
-        });
-        
-        box.addEventListener('dragleave', () => {
-            box.style.background = '';
-        });
-        
-        box.addEventListener('drop', (e) => {
-            e.preventDefault();
-            box.style.background = '';
-            
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                input.files = dataTransfer.files;
-                input.dispatchEvent(new Event('change'));
-            }
+    document.querySelectorAll('.upload-btn').forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const targetId = button.dataset.target;
+            const input = document.getElementById(targetId);
+            if (input) input.click();
         });
     });
 }
 
-// ========== SLIDERS ==========
-function initializeSliders() {
-    // Mood Intensity Slider
-    const moodSlider = document.getElementById('mood-intensity');
-    const moodValue = document.getElementById('mood-value');
-    
-    if (moodSlider && moodValue) {
-        moodSlider.addEventListener('input', (e) => {
-            const value = parseInt(e.target.value);
-            state.options.moodIntensity = value;
-            moodValue.textContent = value.toString().padStart(2, '0');
-        });
-    }
-    
-    // Product Preservation Slider
-    const productSlider = document.getElementById('product-preservation');
-    const productValue = document.getElementById('product-value');
-    
-    if (productSlider && productValue) {
-        productSlider.addEventListener('input', (e) => {
-            const value = parseInt(e.target.value);
-            state.options.productPreservation = value;
-            productValue.textContent = value.toString().padStart(2, '0');
-        });
-    }
-}
+function initializeSingleUpload(type) {
+    const input = document.getElementById(`upload-${type}`);
+    const preview = document.getElementById(`preview-${type}`);
+    const box = document.querySelector(`[data-upload="${type}"]`);
+    if (!input || !preview || !box) return;
 
-// ========== RADIO BUTTONS ==========
-function initializeRadios() {
-    const radios = document.querySelectorAll('input[name="resolution"]');
-    
-    radios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            state.options.resolution = e.target.value;
-            console.log(`✅ 해상도 변경: ${e.target.value.toUpperCase()}`);
-        });
+    box.addEventListener('click', (event) => {
+        if (!event.target.closest('.upload-btn')) input.click();
+    });
+
+    input.addEventListener('change', async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        await handleSingleImage(file, type, preview, box);
+    });
+
+    attachDragAndDrop(box, async (files) => {
+        const file = files[0];
+        if (!file) return;
+        await handleSingleImage(file, type, preview, box);
     });
 }
 
-// ========== GENERATE BUTTONS ==========
-function initializeGenerateButtons() {
-    const singleBtn = document.getElementById('generate-single');
-    const batchBtn = document.getElementById('generate-batch');
-    
-    if (singleBtn) {
-        singleBtn.addEventListener('click', () => generateImages(1));
-    }
-    
-    if (batchBtn) {
-        batchBtn.addEventListener('click', () => generateImages(4));
-    }
-}
-
-// ========== GENERATE IMAGES ==========
-async function generateImages(count) {
-    // Validate inputs
-    if (!state.images.background || !state.images.product || !state.images.composition) {
-        alert('3개의 이미지를 모두 업로드해주세요.');
-        return;
-    }
-    
-    console.log('🚀 이미지 생성 시작:', {
-        count,
-        resolution: state.options.resolution,
-        moodIntensity: state.options.moodIntensity,
-        productPreservation: state.options.productPreservation
-    });
-    
-    // Show loading
-    showLoading(true);
-    
+async function handleSingleImage(file, type, preview, box) {
     try {
-        // Prepare request data
+        validateImageFile(file);
+        const imageData = await resizeImageToDataUrl(file);
+        state.images[type] = imageData;
+        preview.style.backgroundImage = `url(${imageData})`;
+        box.classList.add('has-image');
+        console.log(`✅ ${type} uploaded`);
+    } catch (error) {
+        alert(error.message);
+        console.error(error);
+    }
+}
+
+function initializeProductUpload() {
+    const input = document.getElementById('upload-productSources');
+    const box = document.querySelector('[data-upload="productSources"]');
+    if (!input || !box) return;
+
+    box.addEventListener('click', (event) => {
+        if (!event.target.closest('.upload-btn') && !event.target.closest('.product-remove')) input.click();
+    });
+
+    input.addEventListener('change', async (event) => {
+        const files = Array.from(event.target.files || []);
+        await addProductFiles(files);
+        input.value = '';
+    });
+
+    attachDragAndDrop(box, async (files) => {
+        await addProductFiles(Array.from(files));
+    });
+}
+
+async function addProductFiles(files) {
+    if (!files.length) return;
+
+    const availableSlots = MAX_PRODUCTS - state.images.productSources.length;
+    if (availableSlots <= 0) {
+        alert(`제품 이미지는 최대 ${MAX_PRODUCTS}개까지 업로드할 수 있습니다.`);
+        return;
+    }
+
+    const selectedFiles = files.slice(0, availableSlots);
+
+    try {
+        for (const file of selectedFiles) {
+            validateImageFile(file);
+            const imageData = await resizeImageToDataUrl(file);
+            state.images.productSources.push({
+                name: file.name,
+                dataUrl: imageData
+            });
+        }
+        renderProductSources();
+    } catch (error) {
+        alert(error.message);
+        console.error(error);
+    }
+}
+
+function renderProductSources() {
+    const list = document.getElementById('product-list');
+    const preview = document.getElementById('preview-productSources');
+    const box = document.querySelector('[data-upload="productSources"]');
+    if (!list || !preview || !box) return;
+
+    list.innerHTML = '';
+    state.images.productSources.forEach((product, index) => {
+        const item = document.createElement('div');
+        item.className = 'product-chip';
+        item.innerHTML = `
+            <span>Product ${String(index + 1).padStart(2, '0')}</span>
+            <button type="button" class="product-remove" aria-label="Remove product" data-index="${index}">×</button>
+        `;
+        list.appendChild(item);
+    });
+
+    list.querySelectorAll('.product-remove').forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const index = Number(button.dataset.index);
+            state.images.productSources.splice(index, 1);
+            renderProductSources();
+        });
+    });
+
+    if (state.images.productSources.length) {
+        preview.style.backgroundImage = `url(${state.images.productSources[0].dataUrl})`;
+        box.classList.add('has-image');
+    } else {
+        preview.style.backgroundImage = '';
+        box.classList.remove('has-image');
+    }
+}
+
+function attachDragAndDrop(box, onDropFiles) {
+    box.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        box.classList.add('drag-over');
+    });
+
+    box.addEventListener('dragleave', () => {
+        box.classList.remove('drag-over');
+    });
+
+    box.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        box.classList.remove('drag-over');
+        await onDropFiles(event.dataTransfer.files);
+    });
+}
+
+function validateImageFile(file) {
+    if (!file.type.startsWith('image/')) {
+        throw new Error('이미지 파일만 업로드 가능합니다.');
+    }
+    if (file.size > MAX_FILE_SIZE) {
+        throw new Error('파일 크기는 12MB 이하여야 합니다. 큰 이미지는 먼저 압축해주세요.');
+    }
+}
+
+function resizeImageToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('파일을 읽는 중 오류가 발생했습니다.'));
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onerror = () => reject(new Error('이미지를 처리할 수 없습니다.'));
+            img.onload = () => {
+                const { width, height } = fitWithinBounds(img.width, img.height, MAX_IMAGE_EDGE, MAX_IMAGE_EDGE);
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function fitWithinBounds(width, height, maxWidth, maxHeight) {
+    let nextWidth = width;
+    let nextHeight = height;
+
+    if (nextWidth > maxWidth || nextHeight > maxHeight) {
+        const ratio = Math.min(maxWidth / nextWidth, maxHeight / nextHeight);
+        nextWidth = Math.round(nextWidth * ratio);
+        nextHeight = Math.round(nextHeight * ratio);
+    }
+
+    return { width: nextWidth, height: nextHeight };
+}
+
+// ========== OPTIONS ==========
+function initializeRadios() {
+    document.querySelectorAll('input[name="resolution"]').forEach(radio => {
+        radio.addEventListener('change', (event) => {
+            state.options.resolution = event.target.value;
+        });
+    });
+
+    document.querySelectorAll('input[name="variation"]').forEach(radio => {
+        radio.addEventListener('change', (event) => {
+            state.options.variations = Number(event.target.value);
+        });
+    });
+}
+
+function initializeDirectionTextarea() {
+    const textarea = document.getElementById('additional-direction');
+    const counter = document.getElementById('direction-count');
+    if (!textarea) return;
+
+    textarea.addEventListener('input', (event) => {
+        state.options.additionalDirection = event.target.value.trim();
+        if (counter) counter.textContent = `${event.target.value.length} / 1200`;
+    });
+}
+
+function initializeGenerateButton() {
+    const button = document.getElementById('generate-button');
+    if (!button) return;
+    button.addEventListener('click', generateImages);
+}
+
+// ========== GENERATE ==========
+async function generateImages() {
+    if (!state.images.compositionGuide) {
+        alert('Composition Guide 이미지를 업로드해주세요.');
+        return;
+    }
+    if (!state.images.backgroundReference) {
+        alert('Background Reference 이미지를 업로드해주세요.');
+        return;
+    }
+    if (state.images.productSources.length < 1) {
+        alert('Product Source 이미지를 최소 1개 업로드해주세요.');
+        return;
+    }
+
+    showLoading(true);
+
+    try {
         const requestData = {
-            model: 'nano-banana-pro',
+            model: 'gemini-3-pro-image-preview',
             image_urls: [
-                state.images.background,
-                state.images.product,
-                state.images.composition
+                state.images.compositionGuide,
+                state.images.backgroundReference,
+                ...state.images.productSources.map(product => product.dataUrl)
             ],
             query: buildPrompt(),
             image_size: state.options.resolution,
             aspect_ratio: 'auto',
-            task_summary: '제품 무드컷 자동 합성',
-            count: count
+            task_summary: 'Composition-locked product moodshot generation',
+            count: state.options.variations,
+            input_order: {
+                image_1: 'Composition Guide — absolute composition and product placement reference',
+                image_2: 'Background Reference — material, texture, mood, lighting, spatial reference',
+                image_3_plus: 'Product Source Images — product detail and identity preservation references'
+            }
         };
-        
-        // Call REAL Nano Banana Pro API via GenSpark Agent
-        const results = await callNanoBananaPro(requestData);
-        
-        // Display results
+
+        console.log('🚀 Generate request', requestData);
+        const results = await callImageGenerationAPI(requestData);
         displayResults(results);
-        
-        console.log('✅ 이미지 생성 완료:', results.length);
-        
     } catch (error) {
         console.error('❌ 이미지 생성 실패:', error);
         alert(`이미지 생성 중 오류가 발생했습니다: ${error.message}`);
@@ -287,110 +334,121 @@ async function generateImages(count) {
     }
 }
 
-// ========== BUILD PROMPT ==========
 function buildPrompt() {
-    const moodLevel = state.options.moodIntensity;
-    const productLevel = state.options.productPreservation;
-    
-    return `Create a professional product mood shot by harmonizing background, product, and composition reference images.
+    const additionalDirection = state.options.additionalDirection;
 
-REQUIREMENTS:
-- Mood Intensity: ${moodLevel}/10 — Apply background atmosphere and lighting ${moodLevel > 7 ? 'strongly' : moodLevel > 4 ? 'moderately' : 'subtly'}
-- Product Preservation: ${productLevel}/10 — Preserve product details ${productLevel > 7 ? 'strictly' : productLevel > 4 ? 'moderately' : 'loosely'}
-- Seamlessly blend the product into the background
-- Match lighting, shadows, reflections naturally
-- Adjust color temperature to harmonize with the scene
-- Remove any existing products from the background
-- Follow the composition reference for product placement
-- Maintain photorealistic quality with no composite artifacts
+    return `Use Image 1 as the absolute composition reference.
 
-STYLE: Professional studio photography, high detail, natural lighting, perfect integration`;
+Image Order:
+- Image 1: Composition Guide. This is a rough layout made with cut-out product images. It defines the final product composition.
+- Image 2: Background Reference. This defines material, texture, surface quality, depth, lighting mood, and spatial feeling.
+- Image 3 and any additional images: Product Source Images. Use these to preserve product details, logos, geometry, edges, material, proportions, and surface quality.
+
+Lock Composition & Products:
+Preserve the exact product position, scale, stacking order, spacing, and camera angle from Image 1.
+Do NOT move, rotate, resize, crop, or redesign the products.
+Product geometry, edges, proportions, orientation, and alignment must remain identical to Image 1.
+Only use product source images to improve detail fidelity, not to alter the composition.
+
+Lighting & Shadows:
+Match the original lighting direction, softness, and intensity from Image 1.
+Preserve realistic contact shadows under the products.
+Shadow shape, falloff, density, and grounding must remain consistent with Image 1.
+No floating products. No altered shadow logic.
+
+Background Reconstruction using Image 2:
+Analyze Image 2 for material, texture, surface quality, depth, and spatial feeling.
+Do NOT copy only the color.
+Use the texture, material character, and environmental mood of Image 2 to reconstruct a new background space that fits the camera angle and perspective of Image 1.
+Remove all objects, people, props, furniture, text, and specific elements from Image 2.
+Rebuild a clean, empty background environment inspired by Image 2, with correct perspective, surface continuity, and spatial depth as if the background physically exists behind the products.
+
+Perspective Matching:
+Adapt the background planes, floor, wall, or surface orientation to perfectly align with the camera height, horizon, and angle of Image 1.
+The background must feel naturally photographed from the same viewpoint.
+
+Integration:
+Harmonize background exposure, color temperature, texture scale, and light interaction with the products.
+Maintain natural light bounce and realistic depth separation.
+The background should support the products without drawing attention.
+
+Realism:
+Photorealistic result only.
+Natural reflections, realistic material response, correct scale.
+No stylization, no illustration look, no CGI artifacts.
+
+Strict Rules:
+Only the background may be reinterpreted and reconstructed.
+Products, composition, camera, lighting, and shadows must remain exactly as in Image 1.
+
+Background Detail Enhancement:
+Increase background texture resolution and material clarity subtly and realistically.
+Enhance fine surface details such as grain, fabric weave, concrete pores, paper fibers, or natural imperfections, while keeping the background understated and non-distracting.
+
+Upscaling Rules:
+Refine texture sharpness without over-definition.
+No exaggerated micro-details.
+No artificial sharpness or HDR effect.
+
+Material Behavior:
+Maintain physically accurate material response.
+Subtle variation in roughness and surface irregularity.
+Natural scale of texture relative to the products.
+
+Finish:
+Crisp but soft realism.
+Editorial-grade background quality.
+Background must feel realistically photographed, not digitally enhanced.
+
+Additional User Direction:
+${additionalDirection || 'No additional direction. Follow the master prompt strictly.'}
+
+Negative Prompt:
+change composition, change angle, move products, rotate products, resize products, crop products, product redesign, different lighting direction, fake shadows, floating objects, added props, people, furniture, text, cartoon, illustration, CGI look, AI artifacts, color-only background copy, flat backdrop, over-smoothing, background objects over-smoothing, background objects over-textured background, excessive sharpness, HDR look, hyper-detailed surfaces, procedural noise, artificial grain buildup, background stealing attention`;
 }
 
-// ========== REPLICATE SDXL API ==========
-async function callNanoBananaPro(requestData) {
-    console.log('========================================');
-    console.log('🎨 KAKAO THUMB AI - Replicate SDXL 이미지 생성');
-    console.log('========================================');
-    console.log('📋 요청 데이터:');
-    console.log('- Model: Replicate SDXL');
-    console.log('- Count:', requestData.count);
-    console.log('- Resolution:', requestData.image_size);
-    console.log('- Prompt:', requestData.query);
-    console.log('========================================');
-    
-    try {
-        // API 엔드포인트 호출
-        console.log('🚀 Replicate API 호출 중...');
-        
-        const response = await fetch('/api/generate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                image_urls: requestData.image_urls,
-                query: requestData.query,
-                image_size: requestData.image_size,
-                count: requestData.count
-            })
-        });
+async function callImageGenerationAPI(requestData) {
+    const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+    });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP ${response.status}`);
-        }
+    const data = await response.json().catch(() => null);
 
-        const data = await response.json();
-        
-        if (!data.success) {
-            throw new Error(data.message || '이미지 생성 실패');
-        }
-
-        console.log('✅ 이미지 생성 완료:', data.count, '개');
-        console.log('========================================');
-        
-        return data.images;
-
-    } catch (error) {
-        console.error('❌ API 호출 실패:', error);
-        throw error;
+    if (!response.ok) {
+        throw new Error(data?.message || `HTTP ${response.status}`);
     }
+    if (!data?.success) {
+        throw new Error(data?.message || '이미지 생성 실패');
+    }
+
+    return data.images;
 }
 
-// ========== DISPLAY RESULTS ==========
+// ========== RESULTS ==========
 function displayResults(images) {
     const container = document.getElementById('results-container');
     if (!container) return;
-    
-    // Clear previous results
+
     container.innerHTML = '';
-    
-    // Add new results
+
     images.forEach((imageUrl, index) => {
         const item = document.createElement('div');
         item.className = 'result-item';
-        
         item.innerHTML = `
-            <img src="${imageUrl}" alt="Result ${index + 1}" class="result-image">
+            <img src="${imageUrl}" alt="Generated result ${index + 1}" class="result-image">
             <div class="result-actions">
-                <button class="result-btn" onclick="downloadImage('${imageUrl}', ${index + 1})">
-                    DOWNLOAD
-                </button>
-                <button class="result-btn" onclick="deleteResult(this)">
-                    DELETE
-                </button>
+                <button class="result-btn" type="button" onclick="downloadImage('${imageUrl}', ${index + 1})">DOWNLOAD</button>
+                <button class="result-btn" type="button" onclick="deleteResult(this)">DELETE</button>
             </div>
         `;
-        
         container.appendChild(item);
     });
-    
-    // Scroll to results
+
     container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// ========== DOWNLOAD IMAGE ==========
 function downloadImage(imageUrl, index) {
     const link = document.createElement('a');
     link.href = imageUrl;
@@ -398,51 +456,25 @@ function downloadImage(imageUrl, index) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    console.log(`📥 이미지 다운로드: result-${index}`);
 }
 
-// ========== DELETE RESULT ==========
 function deleteResult(button) {
     const item = button.closest('.result-item');
-    if (item) {
-        item.style.opacity = '0';
-        setTimeout(() => item.remove(), 300);
-    }
+    if (!item) return;
+    item.style.opacity = '0';
+    setTimeout(() => item.remove(), 250);
 }
 
-// ========== LOADING OVERLAY ==========
 function showLoading(show) {
     const overlay = document.getElementById('loading-overlay');
     if (!overlay) return;
-    
-    if (show) {
-        overlay.classList.add('active');
-    } else {
-        overlay.classList.remove('active');
-    }
+    overlay.classList.toggle('active', Boolean(show));
 }
 
-// ========== API ENDPOINT NOTES ==========
-/*
-현재 구현:
-- GenSpark Agent를 통한 실시간 API 호출
-- 엔드포인트: /api/generate-image (상대 경로)
-- 이미지는 Base64로 전송됨
-- Nano Banana Pro 모델 사용
-
-외부 배포 시:
-- 별도 백엔드 서버 필요 (Node.js + Express)
-- BACKEND_DEVELOPER_GUIDE.md 참고
-- API_ENDPOINT를 배포된 URL로 변경 필요
-  예: 'https://your-backend-url.vercel.app/api/generate-image'
-*/
-
-// ========== UTILITY FUNCTIONS ==========
-function log(message, data = null) {
-    console.log(`[KAKAO THUMB AI] ${message}`, data || '');
-}
-
-// Expose functions to window for inline handlers
 window.downloadImage = downloadImage;
 window.deleteResult = deleteResult;
+window.KakaoThumbAI = {
+    getState: () => structuredClone(state),
+    buildPrompt,
+    clear: () => window.location.reload()
+};
