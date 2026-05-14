@@ -1,0 +1,105 @@
+<svg width="100%" viewBox="0 0 880 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="IIC AI Generator system architecture">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1 L8 5 L2 9" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      .t { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Inter, Arial, sans-serif; font-size: 14px; font-weight: 600; fill: #1a1a1a; }
+      .ts { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Inter, Arial, sans-serif; font-size: 12px; font-weight: 400; fill: #555; }
+      .label { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Inter, Arial, sans-serif; font-size: 11px; font-weight: 600; fill: #888; letter-spacing: 0.8px; }
+      .arrow-line { stroke: #888; stroke-width: 1.2; fill: none; }
+    </style>
+  </defs>
+
+  <!-- Title -->
+  <text x="40" y="40" class="t" style="font-size: 18px;">IIC AI Generator — System Architecture</text>
+  <text x="40" y="60" class="ts">CCP Team internal tool · built on Nano Banana Pro</text>
+
+  <!-- ===== 1. SERVER BOARDS ===== -->
+  <text x="40" y="100" class="label">1 · SERVER BOARDS (CCP 관리)</text>
+  <rect x="40" y="110" width="800" height="130" rx="12" fill="#f4f6ff" stroke="#c5cdf0" stroke-width="1"/>
+
+  <g>
+    <rect x="60" y="130" width="180" height="100" rx="8" fill="#e8edff" stroke="#a8b3e8" stroke-width="1"/>
+    <text x="150" y="155" class="t" text-anchor="middle">Product · Official</text>
+    <text x="150" y="173" class="ts" text-anchor="middle">공식 누끼</text>
+    <text x="150" y="195" class="ts" text-anchor="middle" style="font-size: 11px;">브랜드 승인 자산</text>
+    <text x="150" y="212" class="ts" text-anchor="middle" style="font-size: 11px;">최종 캠페인용</text>
+  </g>
+
+  <g>
+    <rect x="255" y="130" width="180" height="100" rx="8" fill="#fff3e0" stroke="#f0c178" stroke-width="1"/>
+    <text x="345" y="155" class="t" text-anchor="middle">Product · AI Draft</text>
+    <text x="345" y="173" class="ts" text-anchor="middle">드래프트 누끼</text>
+    <text x="345" y="195" class="ts" text-anchor="middle" style="font-size: 11px;">시안·WIP 자산</text>
+    <text x="345" y="212" class="ts" text-anchor="middle" style="font-size: 11px;">빠른 반복용</text>
+  </g>
+
+  <g>
+    <rect x="450" y="130" width="180" height="100" rx="8" fill="#f0e9f7" stroke="#c5b0db" stroke-width="1"/>
+    <text x="540" y="155" class="t" text-anchor="middle">Package &amp; Ribbon</text>
+    <text x="540" y="173" class="ts" text-anchor="middle">패키지 구성</text>
+    <text x="540" y="195" class="ts" text-anchor="middle" style="font-size: 11px;">박스 + 리본</text>
+    <text x="540" y="212" class="ts" text-anchor="middle" style="font-size: 11px;">하트박스 · Blue/Pink</text>
+  </g>
+
+  <g>
+    <rect x="645" y="130" width="180" height="100" rx="8" fill="#e6f6ee" stroke="#9bd6b6" stroke-width="1"/>
+    <text x="735" y="155" class="t" text-anchor="middle">GWP Objects</text>
+    <text x="735" y="173" class="ts" text-anchor="middle">사은품</text>
+    <text x="735" y="195" class="ts" text-anchor="middle" style="font-size: 11px;">2ml 향수, 키링</text>
+    <text x="735" y="212" class="ts" text-anchor="middle" style="font-size: 11px;">메인의 30~50%</text>
+  </g>
+
+  <!-- Arrow down -->
+  <line x1="440" y1="245" x2="440" y2="275" class="arrow-line" marker-end="url(#arrow)"/>
+
+  <!-- ===== 2. USER INPUT ===== -->
+  <text x="40" y="295" class="label">2 · USER INPUT (사용자가 직접 올리는 한 가지)</text>
+  <rect x="40" y="305" width="395" height="100" rx="12" fill="#fff8e1" stroke="#e8c870" stroke-width="1"/>
+  <text x="237" y="335" class="t" text-anchor="middle">Mood Reference</text>
+  <text x="237" y="355" class="ts" text-anchor="middle">레퍼런스 한 장 (필수)</text>
+  <text x="237" y="378" class="ts" text-anchor="middle" style="font-size: 11px;">무드·조명·재질·공간감 기준</text>
+  <text x="237" y="394" class="ts" text-anchor="middle" style="font-size: 11px;">색만 복사하지 않고 분석 후 재구성</text>
+
+  <text x="455" y="295" class="label">2b · OPTIONAL DRAFT (선택)</text>
+  <rect x="455" y="305" width="385" height="100" rx="12" fill="#f5f5f5" stroke="#cccccc" stroke-width="1"/>
+  <text x="647" y="335" class="t" text-anchor="middle">Composition Draft</text>
+  <text x="647" y="355" class="ts" text-anchor="middle">누끼 합성 가이드 (선택)</text>
+  <text x="647" y="378" class="ts" text-anchor="middle" style="font-size: 11px;">직접 합성한 누끼 배치 이미지</text>
+  <text x="647" y="394" class="ts" text-anchor="middle" style="font-size: 11px;">업로드 시 구도가 락됩니다</text>
+
+  <!-- Arrow down -->
+  <line x1="440" y1="410" x2="440" y2="445" class="arrow-line" marker-end="url(#arrow)"/>
+
+  <!-- ===== 3. MODE + PROMPT ===== -->
+  <text x="40" y="465" class="label">3 · NANO BANANA PRO + 6 MODES</text>
+  <rect x="40" y="475" width="800" height="120" rx="12" fill="#fee8ec" stroke="#e8a4b0" stroke-width="1"/>
+
+  <text x="60" y="500" class="t">Mode 선택 (6종)</text>
+  <text x="60" y="520" class="ts">01 배경 교체 · 02 배경 컬러 · 03 앵글 변경</text>
+  <text x="60" y="538" class="ts">04 재질 강화 · 05 구도 합성 · 06 크리에이티브</text>
+
+  <line x1="335" y1="510" x2="335" y2="565" stroke="#e8a4b0" stroke-width="0.8" stroke-dasharray="2,2"/>
+
+  <text x="355" y="500" class="t">자동 적용 규칙</text>
+  <text x="355" y="520" class="ts">· 제품 정체성 락 (라벨·로고·색)</text>
+  <text x="355" y="538" class="ts">· 텍스처 자동 인식 (유리·가죽·스틸)</text>
+  <text x="355" y="555" class="ts">· GWP 30~50% · 패키지 보존</text>
+  <text x="355" y="572" class="ts">· 등급 자동 분류 (Official / Draft)</text>
+
+  <line x1="640" y1="510" x2="640" y2="565" stroke="#e8a4b0" stroke-width="0.8" stroke-dasharray="2,2"/>
+
+  <text x="660" y="500" class="t">옵션</text>
+  <text x="660" y="520" class="ts">· 2K / 4K</text>
+  <text x="660" y="538" class="ts">· 1~4장 동시 생성</text>
+  <text x="660" y="555" class="ts">· 1:1, 4:5, 16:9, 9:16</text>
+
+  <!-- Arrow down -->
+  <line x1="440" y1="600" x2="440" y2="635" class="arrow-line" marker-end="url(#arrow)"/>
+
+  <!-- ===== 4. OUTPUT ===== -->
+  <text x="40" y="655" class="label">4 · AUTO-FOLDERED OUTPUT (제품별 폴더 + 자동 네이밍)</text>
+  <rect x="40" y="665" width="800" height="40" rx="12" fill="#e6f6ee" stroke="#9bd6b6" stroke-width="1"/>
+  <text x="60" y="690" class="ts" style="font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; fill: #1a1a1a;">shell30ml_HeartBlueRibbon/  →  shell30ml_HeartBlueRibbon_GWP_BLUEHINOKI2ml_M05_01.png   _02.png   _03.png</text>
+</svg>
