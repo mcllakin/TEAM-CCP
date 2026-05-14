@@ -820,6 +820,13 @@ async function generateImages() {
 
         const prompt = mode.buildPrompt(ctx);
 
+        // Resolve any image URLs to data URLs (the backend expects base64)
+        setLoadingSubtext('이미지 준비 중...');
+        const productDataUrl = product ? await ensureDataUrl(product.dataUrl) : null;
+        const gwpDataUrl = ctx.hasGWP ? await ensureDataUrl(state.selection.gwp.dataUrl) : null;
+        const packageDataUrl = ctx.hasPackage ? await ensureDataUrl(state.selection.package.dataUrl) : null;
+        setLoadingSubtext(`Mode ${mode.num} · ${mode.label} · ${state.options.variations}장 생성 중...`);
+
         const requestData = {
             mode: state.mode,
             model: 'gemini-3-pro-image-preview',
@@ -828,10 +835,10 @@ async function generateImages() {
             aspect_ratio: state.options.aspect,
             image_size: state.options.resolution,
             images: {
-                product_sources: product ? [product.dataUrl] : [],
+                product_sources: productDataUrl ? [productDataUrl] : [],
                 background_reference: mode.needs.reference !== 'hidden' ? state.uploads.backgroundReference : null,
-                gwp: ctx.hasGWP ? state.selection.gwp.dataUrl : null,
-                package: ctx.hasPackage ? state.selection.package.dataUrl : null,
+                gwp: gwpDataUrl,
+                package: packageDataUrl,
                 composition_guide: state.uploads.compositionDraft || null
             },
             identity: {
@@ -871,6 +878,23 @@ async function callAPI(requestData) {
     if (!response.ok) throw new Error(data?.message || data?.error || `HTTP ${response.status}`);
     if (!data?.success) throw new Error(data?.message || data?.error || '이미지 생성 실패');
     return data;
+}
+
+// Convert a remote URL to a base64 data URL.
+// If the input is already a data URL, returns it unchanged.
+async function ensureDataUrl(input) {
+    if (!input) return null;
+    if (input.startsWith('data:')) return input;
+
+    const response = await fetch(input);
+    if (!response.ok) throw new Error(`자산 로드 실패 (${response.status}): ${input}`);
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('자산 변환 실패'));
+        reader.readAsDataURL(blob);
+    });
 }
 
 // ========== RESULTS ==========
