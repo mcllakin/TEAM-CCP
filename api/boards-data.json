@@ -2,11 +2,12 @@
   "boards": {
     "product-official": [
       {
-        "id": "shell30ml-sunshine",
-        "label": "SHELL 30ml — SUNSHINE",
-        "thumbnail": "/images/boards/shell30ml-sunshine.jpg",
-        "dataUrl": "/images/boards/shell30ml-sunshine.jpg",
-        "tags": ["perfume hand", "shell", "30ml", "sunshine"]
+        "id": "shell30ml-evening-glow",
+        "label": "SHELL 30ml — EVENING GLOW",
+        "thumbnail": "/images/boards/shell30ml-evening-glow.png",
+        "dataUrl": "/images/boards/shell30ml-evening-glow.png",
+        "transparent": true,
+        "tags": ["perfume hand", "shell", "30ml", "evening-glow"]
       }
     ],
     "product-draft": [],
@@ -16,6 +17,7 @@
         "label": "Heart box · Blue ribbon",
         "thumbnail": "/images/boards/heart-blue-ribbon.jpg",
         "dataUrl": "/images/boards/heart-blue-ribbon.jpg",
+        "transparent": false,
         "tags": ["package", "heart-box", "blue-ribbon"]
       }
     ],
@@ -23,15 +25,17 @@
       {
         "id": "bluehinoki-2ml",
         "label": "BLUE HINOKI 2ml",
-        "thumbnail": "/images/boards/bluehinoki-2ml.jpg",
-        "dataUrl": "/images/boards/bluehinoki-2ml.jpg",
+        "thumbnail": "/images/boards/bluehinoki-2ml.png",
+        "dataUrl": "/images/boards/bluehinoki-2ml.png",
+        "transparent": true,
         "tags": ["gwp", "perfume", "2ml", "blue-hinoki"]
       },
       {
         "id": "sunshine-keyring",
         "label": "SUNSHINE dog keyring",
-        "thumbnail": "/images/boards/sunshine-keyring.jpg",
-        "dataUrl": "/images/boards/sunshine-keyring.jpg",
+        "thumbnail": "/images/boards/sunshine-keyring.png",
+        "dataUrl": "/images/boards/sunshine-keyring.png",
+        "transparent": true,
         "tags": ["gwp", "keyring", "dog", "sunshine"]
       }
     ]
