@@ -1,316 +1,102 @@
-# 🚀 Vercel 배포 - 단계별 가이드
+# Vercel 배포 가이드 (한국어)
 
-**5분이면 외부 공유 가능!**
-
----
-
-## 📋 체크리스트
-
-배포 전 확인:
-- [x] index.html ✅
-- [x] css/style.css ✅
-- [x] js/app.js ✅
-- [x] .gitignore ✅
-- [x] vercel.json ✅
-- [x] README.md ✅
+이 가이드는 GitHub에 코드를 올린 뒤 Vercel에 연결해서 사이트를 배포하는 전체 흐름을 설명합니다.
+개발자가 아니어도 따라할 수 있도록 작성되어 있습니다.
 
 ---
 
-## 🔧 1단계: GitHub 리포지토리 생성
+## 1단계 — Gemini API 키 발급
 
-### 1-1. GitHub 접속
-```
-https://github.com
+1. https://aistudio.google.com/apikey 접속
+2. Google 계정으로 로그인
+3. **Create API key** 버튼 클릭
+4. 키를 복사해서 안전한 곳에 저장 (다시는 보여주지 않습니다)
 
-로그인 (계정 없으면 가입)
-```
-
-### 1-2. 새 리포지토리 만들기
-```
-1. 우측 상단 "+" 클릭
-2. "New repository" 선택
-3. 설정:
-   - Repository name: kakao-thumb-ai
-   - Description: AI-Powered Product Mood Shot Generator
-   - Public 선택 ✅
-   - README 체크 해제 (이미 있음)
-4. "Create repository" 클릭
-```
+> Nano Banana Pro (`gemini-3-pro-image-preview`)는 이미지 생성당 비용이 발생합니다. 가격은 Google AI Studio의 가격 페이지에서 확인하세요.
 
 ---
 
-## 💻 2단계: 로컬에서 GitHub 업로드
+## 2단계 — GitHub에 코드 올리기
 
-### 2-1. 현재 프로젝트 폴더 위치 확인
-```
-프로젝트 파일들이 있는 폴더:
-- index.html
-- css/
-- js/
-- images/
-- README.md
-- .gitignore
-- vercel.json
-```
-
-### 2-2. Git이 설치되어 있나요?
-
-**확인:**
-```bash
-git --version
-```
-
-**설치 안 되어 있으면:**
-```
-https://git-scm.com/
-다운로드 후 설치
-```
-
-### 2-3. 터미널/CMD 열기
-
-**Windows:**
-```
-프로젝트 폴더에서
-Shift + 우클릭 → "여기서 PowerShell 창 열기"
-또는
-CMD 열고 cd로 프로젝트 폴더 이동
-```
-
-**Mac:**
-```
-프로젝트 폴더에서
-우클릭 → "폴더에서 새로운 터미널"
-```
-
-### 2-4. Git 명령어 실행
-
-**한 줄씩 입력하세요:**
+이 폴더 전체를 GitHub 저장소에 푸시합니다.
 
 ```bash
-# 1. Git 초기화
+cd TEAM-CCP-main
 git init
-
-# 2. 파일 추가
-git add index.html
-git add css/
-git add js/
-git add images/
-git add README.md
-git add .gitignore
-git add vercel.json
-
-# 3. 커밋
-git commit -m "Initial commit - KAKAO THUMB AI"
-
-# 4. GitHub 연결 (본인의 username으로 변경!)
-git remote add origin https://github.com/YOUR_USERNAME/kakao-thumb-ai.git
-
-# 5. 브랜치 이름 설정
+git add .
+git commit -m "Initial commit: KAKAO THUMB AI v2"
 git branch -M main
-
-# 6. 업로드
+git remote add origin https://github.com/<your-username>/TEAM-CCP.git
 git push -u origin main
 ```
 
-**GitHub 로그인 요청 시:**
-```
-- Username: GitHub 아이디
-- Password: GitHub 비밀번호
-  (또는 Personal Access Token)
-```
+이미 저장소가 있다면 그냥 모든 파일을 덮어쓰고 푸시하면 됩니다.
 
 ---
 
-## 🌐 3단계: Vercel 배포
+## 3단계 — Vercel에 연결
 
-### 3-1. Vercel 가입
-```
-https://vercel.com
-
-1. "Sign Up" 클릭
-2. "Continue with GitHub" 선택
-3. GitHub 계정으로 로그인
-4. Vercel 권한 승인
-```
-
-### 3-2. 프로젝트 Import
-```
-1. Vercel 대시보드에서
-2. "Add New..." 클릭
-3. "Project" 선택
-4. "Import Git Repository" 클릭
-5. GitHub 연결되어 있는지 확인
-6. "kakao-thumb-ai" 리포지토리 찾기
-7. "Import" 클릭
-```
-
-### 3-3. 배포 설정
-```
-Configure Project 화면에서:
-
-Project Name: kakao-thumb-ai (그대로)
-Framework Preset: Other
-Root Directory: ./
-Build Command: (비워둠)
-Output Directory: (비워둠)
-Install Command: (비워둠)
-
-→ 모두 기본값으로!
-```
-
-### 3-4. 배포 시작
-```
-"Deploy" 버튼 클릭!
-
-진행 상황:
-- Building... ⏳
-- Deploying... ⏳
-- Success! ✅
-
-약 2-3분 소요
-```
+1. https://vercel.com 접속, GitHub로 로그인
+2. **Add New → Project** 클릭
+3. 방금 푸시한 GitHub 저장소 선택 → **Import**
+4. **Framework Preset**: Other (또는 자동 감지된 값 그대로)
+5. **Root Directory**: 그대로 두기
+6. **아직 Deploy를 누르지 말고** 환경변수부터 설정 ↓
 
 ---
 
-## 🎉 4단계: 배포 완료!
+## 4단계 — 환경변수 설정 (가장 중요!)
 
-### 4-1. URL 확인
-```
-배포 완료되면 화면에 표시:
+Vercel 프로젝트 import 화면에서:
 
-https://kakao-thumb-ai-xxxx.vercel.app
-또는
-https://kakao-thumb-ai.vercel.app
+1. **Environment Variables** 섹션을 펼침
+2. 다음 변수를 추가:
 
-이게 공유 가능한 URL입니다!
-```
+| Name              | Value                                              |
+|-------------------|----------------------------------------------------|
+| `GEMINI_API_KEY`  | 1단계에서 받은 키 붙여넣기                          |
 
-### 4-2. 확인하기
-```
-1. URL 클릭해서 열기
-2. 웹사이트가 정상 작동하는지 확인:
-   - 디자인 표시 ✅
-   - 이미지 업로드 작동 ✅
-   - 슬라이더 작동 ✅
-   - 버튼 작동 ✅
-```
+3. **Production**, **Preview**, **Development** 모두 체크
 
-### 4-3. 커스텀 도메인 (선택사항)
-```
-Vercel 대시보드:
-1. 프로젝트 설정
-2. Domains
-3. 원하는 도메인 추가 가능
-   예: kakao-thumb-ai.com
-```
+이미 배포된 프로젝트라면:
+- 프로젝트 → **Settings** → **Environment Variables** 에서 추가
+- 추가 후 **Deployments** 탭에서 최신 배포에 **Redeploy** 실행
 
 ---
 
-## 🔗 5단계: 외부 공유
+## 5단계 — Deploy 클릭
 
-### 배포 URL 공유하기
-```
-https://kakao-thumb-ai-xxxx.vercel.app
+배포가 완료되면 Vercel이 자동으로 URL (예: `https://team-ccp.vercel.app`)을 알려줍니다.
+열어서 다음 흐름을 테스트:
 
-이 링크를:
-✅ 카톡으로 전송
-✅ 이메일로 전송
-✅ SNS에 공유
-✅ 포트폴리오에 추가
-
-모두 가능합니다!
-```
-
-### 공유 시 설명
-```
-"KAKAO THUMB AI - AI 이미지 생성 웹 인터페이스
-
-Berlin Studio 스타일의 미니멀 디자인으로
-제작한 AI 제품 무드샷 생성 툴입니다.
-
-현재 UI/UX 프로토타입 단계이며,
-AI 백엔드 연동은 개발 중입니다."
-```
+1. 상단의 인디케이터 (`00 01 02`)가 스크롤에 따라 활성화되는지
+2. **SELECT PRODUCT PHOTOS** 버튼이 파일 선택창을 여는지
+3. 제품 사진 + 무드 레퍼런스를 업로드하면 하단 dock의 점이 초록색이 되고 GENERATE 버튼이 활성화되는지
+4. GENERATE 클릭 → 로딩 → 결과 이미지가 표시되는지
 
 ---
 
-## 🆘 문제 해결
+## 문제 해결
 
-### Git 에러: "not a git repository"
-```
-해결: git init 다시 실행
-```
+### "GEMINI_API_KEY not configured" 에러
+- Vercel Settings → Environment Variables에서 키가 정말 추가되어 있는지 확인
+- 추가했어도 **Redeploy**를 안 하면 적용되지 않습니다
 
-### GitHub 업로드 실패
-```
-해결:
-1. GitHub에서 리포지토리 생성 확인
-2. URL이 정확한지 확인
-3. git remote -v 로 확인
-```
+### "Gemini API error: 403" / "PERMISSION_DENIED"
+- 키가 잘못되었거나, 해당 Google Cloud 프로젝트에서 Gemini API가 활성화되지 않았습니다
+- AI Studio에서 키를 다시 발급받아 보세요
 
-### Vercel 배포 실패
-```
-해결:
-1. GitHub 리포지토리에 파일들 확인
-2. index.html이 루트에 있는지 확인
-3. Vercel에서 다시 Import
-```
+### "Gemini API error: 429" (rate limit)
+- 무료 티어의 분당 요청 한도를 초과했습니다. 잠시 후 다시 시도하거나 결제를 활성화하세요
 
-### 배포는 됐는데 디자인 깨짐
-```
-해결:
-1. css/, js/ 폴더가 GitHub에 올라갔는지 확인
-2. 파일 경로 확인 (상대 경로로)
-3. 브라우저 캐시 삭제 후 새로고침
-```
+### 이미지가 안 나오고 "No image in Gemini response"
+- 프롬프트가 안전성 정책에 걸렸을 가능성. Additional Direction 텍스트를 단순하게 바꿔보세요
+- Console에 모델이 거부 메시지를 같이 반환합니다 (vercel logs로 확인)
 
----
+### Vercel 함수 timeout (504)
+- `vercel.json`에 이미 `maxDuration: 120`이 설정되어 있습니다
+- 무료 플랜에서는 60초가 최대입니다. 더 길게 쓰려면 Pro 플랜으로 업그레이드하세요
 
-## ✅ 완료 체크리스트
-
-- [ ] GitHub 리포지토리 생성
-- [ ] Git으로 파일 업로드
-- [ ] Vercel 계정 가입
-- [ ] 프로젝트 Import
-- [ ] 배포 완료
-- [ ] URL 확인
-- [ ] 웹사이트 정상 작동 확인
-- [ ] 외부 공유 가능!
-
----
-
-## 🎊 축하합니다!
-
-웹사이트가 전 세계에 공개되었습니다!
-
-**배포 URL:**
-```
-https://kakao-thumb-ai-xxxx.vercel.app
-```
-
-**특징:**
-- ✅ 무료 호스팅
-- ✅ 자동 HTTPS
-- ✅ 빠른 로딩
-- ✅ 전 세계 CDN
-- ✅ 자동 배포 (GitHub push 시)
-
----
-
-## 🔄 업데이트 방법
-
-**파일 수정 후:**
-```bash
-git add .
-git commit -m "Update design"
-git push
-
-→ Vercel이 자동으로 재배포!
-→ 약 1-2분 후 반영
-```
-
----
-
-**배포 성공하시면 URL 공유해주세요!** 🚀
-제가 확인해드리겠습니다! 😊
+### 이미지 업로드는 되는데 generate에서 413 (payload too large)
+- 클라이언트에서 이미 1600px / JPEG 0.9로 다운사이즈하고 있어 일반적으로 발생하지 않습니다
+- 그래도 발생한다면 `js/app.js` 상단의 `MAX_IMAGE_EDGE = 1600`을 `1200` 으로 줄여보세요

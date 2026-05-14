@@ -1,242 +1,287 @@
-// ========================================
-// KAKAO THUMB AI - Fooocus img2img
-// ========================================
+// ============================================================
+// KAKAO THUMB AI — Backend API
+// Nano Banana Pro (Gemini 3 Pro Image Preview) image generation
+// ============================================================
+//
+// ─────────────────────────────────────────────────────────────
+// REQUIRED ENVIRONMENT VARIABLES (set these in Vercel → Settings → Env Vars):
+//
+//   GEMINI_API_KEY      — Your Google AI Studio / Gemini API key
+//                         Get one at: https://aistudio.google.com/apikey
+//                         Required for Nano Banana Pro image generation.
+//
+// OPTIONAL:
+//   GEMINI_MODEL        — Override the model name.
+//                         Default: "gemini-3-pro-image-preview"
+//                         (Nano Banana Pro). The legacy/standard model is
+//                         "gemini-2.5-flash-image" (Nano Banana).
+//
+//   GEMINI_API_BASE     — Override the base URL.
+//                         Default: "https://generativelanguage.googleapis.com/v1beta"
+//
+// ─────────────────────────────────────────────────────────────
+// REQUEST CONTRACT (from /js/app.js):
+//
+// POST /api/generate
+// {
+//   "model": "gemini-3-pro-image-preview",
+//   "prompt": "<full assembled master prompt>",
+//   "count": 1..4,
+//   "aspect_ratio": "1:1" | "4:5" | "16:9" | "9:16",
+//   "image_size": "2k" | "4k",
+//   "images": {
+//     "product_sources": [dataUrl, ...],     // 1..6 product photos
+//     "background_reference": dataUrl,        // mood/background reference
+//     "gwp": dataUrl | null,                  // optional gift-with-purchase
+//     "composition_guide": dataUrl | null     // optional composition lock
+//   },
+//   "identity": {
+//     "product_name": "shell30ml",
+//     "campaign_name": "PinkRibbon",
+//     "material": "glass"|"leather"|...
+//   }
+// }
+//
+// RESPONSE:
+// { "success": true, "images": ["data:image/png;base64,..." | "https://..."], "count": N }
+// ─────────────────────────────────────────────────────────────
 
-const Replicate = require("replicate");
-const fetch = require("node-fetch");
+const DEFAULT_MODEL = 'gemini-3-pro-image-preview';
+const DEFAULT_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+const MAX_PARALLEL = 4;
+
+// Node 18+ has global fetch. Fallback to node-fetch if missing.
+const fetchFn = typeof fetch !== 'undefined'
+    ? fetch
+    : (...args) => import('node-fetch').then(({ default: f }) => f(...args));
 
 module.exports = async (req, res) => {
-  res.setHeader("Access-Control-Allow-Credentials", true);
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,POST");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+    // CORS
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
 
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") {
-    return res.status(405).json({ success: false, error: "Method not allowed" });
-  }
-
-  try {
-    const replicateToken = process.env.REPLICATE_API_TOKEN;
-    const imgbbApiKey = process.env.IMGBB_API_KEY;
-
-    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🎨 KAKAO THUMB AI - Fooocus img2img");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-
-    if (!replicateToken) {
-      console.error("❌ REPLICATE_API_TOKEN 없음");
-      return res.status(500).json({ success: false, error: "REPLICATE_API_TOKEN not configured" });
-    }
-    if (!imgbbApiKey) {
-      console.error("❌ IMGBB_API_KEY 없음");
-      return res.status(500).json({ success: false, error: "IMGBB_API_KEY not configured" });
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, error: 'Method not allowed' });
     }
 
-    const { image_urls, query, count = 4 } = req.body || {};
+    try {
+        const apiKey = process.env.GEMINI_API_KEY;
+        const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
+        const apiBase = process.env.GEMINI_API_BASE || DEFAULT_API_BASE;
 
-    console.log(`📋 요청:`);
-    console.log(`   Count: ${count}`);
-    console.log(`   Images: ${image_urls?.length}개`);
+        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('🎨 KAKAO THUMB AI — Nano Banana Pro');
+        console.log(`   Model: ${model}`);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-    if (!image_urls || !Array.isArray(image_urls) || image_urls.length !== 3) {
-      return res.status(400).json({ success: false, error: "3개의 이미지가 필요합니다." });
-    }
+        if (!apiKey) {
+            console.error('❌ GEMINI_API_KEY not set');
+            return res.status(500).json({
+                success: false,
+                error: 'GEMINI_API_KEY not configured',
+                message: 'Set GEMINI_API_KEY in your environment (Vercel → Settings → Environment Variables). Get a key at https://aistudio.google.com/apikey'
+            });
+        }
 
-    const safeCount = Math.max(1, Math.min(Number(count) || 4, 8));
-    console.log(`✅ 생성 수: ${safeCount}\n`);
+        const body = req.body || {};
+        const {
+            prompt,
+            count = 1,
+            aspect_ratio = '1:1',
+            images = {},
+            identity = {}
+        } = body;
 
-    // Upload to imgbb
-    async function uploadToImgbb(dataUri, name = "image") {
-      try {
-        const base64Data = String(dataUri).replace(/^data:image\/\w+;base64,/, "");
-        const formData = new URLSearchParams();
-        formData.append("key", imgbbApiKey);
-        formData.append("image", base64Data);
-        formData.append("name", name);
+        if (!prompt || typeof prompt !== 'string') {
+            return res.status(400).json({ success: false, error: 'prompt is required' });
+        }
 
-        const r = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: formData });
-        if (!r.ok) throw new Error(`imgbb HTTP ${r.status}`);
-        const j = await r.json();
-        if (!j.success) throw new Error("imgbb error");
-        console.log(`  ✅ ${name}: ${j.data.url.substring(0, 50)}...`);
-        return j.data.url;
-      } catch (error) {
-        console.error(`  ❌ ${name}:`, error.message);
-        throw error;
-      }
-    }
+        const productSources = Array.isArray(images.product_sources) ? images.product_sources : [];
+        const backgroundReference = images.background_reference || null;
+        const gwp = images.gwp || null;
+        const compositionGuide = images.composition_guide || null;
 
-    // Upload images
-    console.log("📤 이미지 업로드 중...");
-    const [backgroundUrl, productUrl, compositionUrl] = await Promise.all([
-      uploadToImgbb(image_urls[0], "background"),
-      uploadToImgbb(image_urls[1], "product"),
-      uploadToImgbb(image_urls[2], "composition"),
-    ]);
-    console.log("✅ 업로드 완료\n");
+        if (productSources.length < 1) {
+            return res.status(400).json({ success: false, error: '제품 사진은 최소 1장 필요합니다.' });
+        }
+        if (!backgroundReference) {
+            return res.status(400).json({ success: false, error: 'Mood Reference 이미지가 필요합니다.' });
+        }
 
-    // 이미지 기반 프롬프트 (제품 설명 제거)
-    const masterPrompt = `Professional product photography. Combine the product from the reference image with the background scene. Maintain exact product details: original shape, material, color, branding, and label text. Natural photorealistic lighting, realistic shadows and reflections. High quality commercial photography, 8K detail. ${query || ""}`;
+        const safeCount = Math.max(1, Math.min(Number(count) || 1, 4));
 
-    const negativePrompt = `different product, wrong branding, text changes, shape distortion, artistic interpretation, stylized, cartoon, anime, painting, illustration, low quality, blurry, distorted, ugly, deformed, extra elements`;
+        console.log(`📋 Request:`);
+        console.log(`   product_sources: ${productSources.length}`);
+        console.log(`   background_reference: ${backgroundReference ? 'yes' : 'no'}`);
+        console.log(`   gwp: ${gwp ? 'yes' : 'no'}`);
+        console.log(`   composition_guide: ${compositionGuide ? 'yes' : 'no'}`);
+        console.log(`   count: ${safeCount}, aspect: ${aspect_ratio}`);
+        console.log(`   product: ${identity.product_name || '(none)'}, campaign: ${identity.campaign_name || '(none)'}\n`);
 
-    const replicate = new Replicate({ auth: replicateToken });
+        // Build parts: order matters for the model.
+        // Composition guide first (if any), then mood reference, then product sources, then GWP.
+        const parts = [];
 
-    // Generate one image
-    const generateOne = async (index, seed) => {
-      const startTime = Date.now();
-      console.log(`🎨 [${index + 1}/${safeCount}] 시작 (seed: ${seed})`);
+        if (compositionGuide) {
+            parts.push({ text: 'Image — Composition Guide (absolute layout lock):' });
+            parts.push(toInlinePart(compositionGuide));
+        }
 
-      try {
-        const output = await replicate.run(
-          "konieshadow/fooocus-api:fda927242b1db6affa1ece4f54c37f19b964666bf23b0d06ae2439067cd344a4",
-          {
-            input: {
-              prompt: masterPrompt,
-              negative_prompt: negativePrompt,
-              style_selections: "Fooocus V2,Fooocus Enhance,Fooocus Sharp",
-              performance_selection: "Quality",
-              aspect_ratios_selection: "1024*1024",
-              image_number: 1,
-              image_seed: seed,
-              sharpness: 2.0,
-              guidance_scale: 4.0,
-              refiner_switch: 0.5,
-              
-              // 다중 이미지 참조 (핵심!)
-              input_image: compositionUrl,
-              mixing_image_prompt_and_vary_upscale: true,
-              mixing_image_prompt_and_inpaint: false,
-              
-              // Inpaint/Outpaint 설정
-              inpaint_additional_prompt: `Use the exact product from this image, preserve all details`,
-              outpaint_selections: "",
-              outpaint_distance_left: 0,
-              outpaint_distance_right: 0,
-              outpaint_distance_top: 0,
-              outpaint_distance_bottom: 0,
-              
-              // Advanced
-              adm_scaler_positive: 1.5,
-              adm_scaler_negative: 0.8,
-              adm_scaler_end: 0.3,
-              adaptive_cfg: 7.0,
-              sampler_name: "dpmpp_2m_sde_gpu",
-              scheduler_name: "karras",
-              overwrite_step: -1,
-              overwrite_switch: -1,
-              overwrite_width: -1,
-              overwrite_height: -1,
-              overwrite_vary_strength: -1,
-              overwrite_upscale_strength: -1,
-              disable_preview: false,
-              disable_intermediate_results: true,
-              disable_seed_increment: false,
-              black_out_nsfw: false,
-              adm_scaler_end_default: 0.3,
-              adaptive_cfg_default: 7.0,
-              sampler_name_default: "dpmpp_2m_sde_gpu",
-              scheduler_name_default: "karras",
-              generate_image_grid: false,
+        parts.push({ text: 'Image — Mood Reference (background material/lighting/atmosphere only, do not copy literal objects):' });
+        parts.push(toInlinePart(backgroundReference));
+
+        productSources.forEach((dataUrl, idx) => {
+            parts.push({ text: `Image — Product Source ${idx + 1} (identity source of truth — preserve shape, label, logo, color, proportions, material exactly):` });
+            parts.push(toInlinePart(dataUrl));
+        });
+
+        if (gwp) {
+            parts.push({ text: 'Image — GWP / Gift-With-Purchase Object (SUPPORTING element only, smaller than the main product, reduced visual weight, must NOT compete for attention):' });
+            parts.push(toInlinePart(gwp));
+        }
+
+        // Final prompt text
+        parts.push({ text: `\n${prompt}\n\nAspect ratio: ${aspect_ratio}` });
+
+        // Generate `safeCount` variations in parallel (each request returns one image)
+        const generateOne = (index) => callGeminiImage({ apiKey, apiBase, model, parts, index });
+
+        const tasks = Array.from({ length: safeCount }, (_, i) => generateOne(i));
+        const settled = await runWithLimit(tasks, MAX_PARALLEL);
+
+        const images_out = [];
+        const errors = [];
+
+        settled.forEach((result, idx) => {
+            if (result.status === 'fulfilled' && result.value) {
+                images_out.push(result.value);
+            } else {
+                console.error(`❌ image ${idx + 1} failed:`, result.reason?.message || result.reason);
+                errors.push(result.reason?.message || 'unknown error');
             }
-          }
-        );
+        });
 
-        // Extract URL
-        let finalUrl = null;
-        if (typeof output === "string") {
-          finalUrl = output;
-        } else if (Array.isArray(output) && output.length > 0) {
-          finalUrl = output[0];
-        } else if (output?.url) {
-          finalUrl = output.url;
-        } else if (output?.output) {
-          if (typeof output.output === "string") {
-            finalUrl = output.output;
-          } else if (Array.isArray(output.output)) {
-            finalUrl = output.output[0];
-          }
+        if (images_out.length === 0) {
+            return res.status(500).json({
+                success: false,
+                error: 'All generations failed',
+                message: errors[0] || 'No images returned',
+                details: errors
+            });
         }
 
-        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`\n✅ ${images_out.length}/${safeCount} images generated`);
 
-        if (finalUrl) {
-          console.log(`✅ [${index + 1}/${safeCount}] 완료 (${elapsed}s)`);
-          console.log(`   URL: ${finalUrl.substring(0, 70)}...`);
-        } else {
-          console.log(`❌ [${index + 1}/${safeCount}] 실패 (${elapsed}s): URL 없음`);
+        return res.status(200).json({
+            success: true,
+            images: images_out,
+            count: images_out.length,
+            model,
+            message: `${images_out.length}개 이미지 생성 완료`
+        });
+    } catch (error) {
+        console.error('❌ Top-level error:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Generation failed',
+            message: error.message || 'Unknown error'
+        });
+    }
+};
+
+// ────────────── Gemini call ──────────────
+async function callGeminiImage({ apiKey, apiBase, model, parts, index }) {
+    const url = `${apiBase}/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
+    const startTime = Date.now();
+
+    const requestBody = {
+        contents: [{ role: 'user', parts }],
+        generationConfig: {
+            responseModalities: ['IMAGE'],
+            // Optional tuning. Most fields are ignored by image models — kept for safety.
+            temperature: 0.85,
+            candidateCount: 1
         }
-
-        return finalUrl;
-      } catch (error) {
-        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-        console.error(`❌ [${index + 1}/${safeCount}] 에러 (${elapsed}s):`, error.message);
-        return null;
-      }
     };
 
-    // Parallel generation
-    console.log(`🚀 ${safeCount}개 병렬 생성 시작...\n`);
-    const seeds = Array.from({ length: safeCount }, () => Math.floor(Math.random() * 2147483647));
+    console.log(`  🚀 [${index + 1}] calling ${model}...`);
 
-    const settled = await Promise.allSettled(seeds.map((s, i) => generateOne(i, s)));
+    const response = await fetchFn(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+    });
 
-    let images = settled
-      .filter((r) => r.status === "fulfilled")
-      .map((r) => r.value)
-      .filter(Boolean);
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-    console.log(`\n📊 1차 결과: ${images.length}/${safeCount}개 성공`);
-
-    // Retry if needed
-    if (images.length < safeCount) {
-      const need = safeCount - images.length;
-      console.log(`⚠️  재시도: ${need}개\n`);
-
-      const retrySeeds = Array.from({ length: need }, () => Math.floor(Math.random() * 2147483647));
-      const retrySettled = await Promise.allSettled(retrySeeds.map((s, i) => generateOne(images.length + i, s)));
-
-      const retryImages = retrySettled
-        .filter((r) => r.status === "fulfilled")
-        .map((r) => r.value)
-        .filter(Boolean);
-
-      images = images.concat(retryImages);
-      console.log(`📊 재시도 결과: +${retryImages.length}개 (총 ${images.length}개)\n`);
+    if (!response.ok) {
+        const errBody = await response.text();
+        let parsed = {};
+        try { parsed = JSON.parse(errBody); } catch (_) {}
+        const message = parsed?.error?.message || `HTTP ${response.status}`;
+        console.error(`  ❌ [${index + 1}] failed in ${elapsed}s: ${message}`);
+        throw new Error(`Gemini API error: ${message}`);
     }
 
-    if (images.length === 0) {
-      console.error("❌ 모든 생성 실패\n");
-      return res.status(500).json({
-        success: false,
-        error: "모든 이미지 생성 실패",
-      });
+    const data = await response.json();
+    const candidate = data?.candidates?.[0];
+    if (!candidate) {
+        throw new Error('No candidate returned by Gemini');
     }
 
-    images = images.slice(0, safeCount);
+    const inlineParts = candidate?.content?.parts || [];
+    const imagePart = inlineParts.find(p => p.inlineData?.data || p.inline_data?.data);
 
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log(`🎉 최종: ${images.length}/${safeCount}개 완료`);
-    console.log(`💰 비용: $${(images.length * 0.01).toFixed(3)}`);
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+    if (!imagePart) {
+        // Surface model's refusal text if any
+        const textPart = inlineParts.find(p => p.text);
+        const reason = textPart?.text ? ` Model said: "${textPart.text.substring(0, 200)}"` : '';
+        throw new Error(`No image in Gemini response.${reason}`);
+    }
 
-    console.log(`📦 반환 이미지:`);
-    images.forEach((url, i) => console.log(`  [${i + 1}] ${url.substring(0, 70)}...`));
+    const inlineData = imagePart.inlineData || imagePart.inline_data;
+    const mimeType = inlineData.mimeType || inlineData.mime_type || 'image/png';
+    const base64 = inlineData.data;
+    const dataUrl = `data:${mimeType};base64,${base64}`;
 
-    return res.status(200).json({
-      success: true,
-      images: images,
-      count: images.length,
-      model: "Fooocus (Image-Based)",
-      message: `${images.length}개 이미지 생성 완료`,
-    });
-  } catch (error) {
-    console.error("\n❌ 최상위 에러:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Generation failed",
-      message: error.message || "Unknown error",
-    });
-  }
-};
+    console.log(`  ✅ [${index + 1}] done in ${elapsed}s (${Math.round(base64.length / 1024)} KB)`);
+    return dataUrl;
+}
+
+// Convert "data:image/jpeg;base64,xxx" → Gemini inline part
+function toInlinePart(dataUrl) {
+    const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(dataUrl);
+    if (!match) {
+        throw new Error('Invalid data URL provided for one of the input images.');
+    }
+    return {
+        inlineData: {
+            mimeType: match[1],
+            data: match[2]
+        }
+    };
+}
+
+// Limit concurrency for parallel image generation
+async function runWithLimit(tasks, limit) {
+    const results = new Array(tasks.length);
+    let i = 0;
+
+    async function worker() {
+        while (i < tasks.length) {
+            const idx = i++;
+            try {
+                results[idx] = { status: 'fulfilled', value: await tasks[idx] };
+            } catch (e) {
+                results[idx] = { status: 'rejected', reason: e };
+            }
+        }
+    }
+
+    const workers = Array.from({ length: Math.min(limit, tasks.length) }, () => worker());
+    await Promise.all(workers);
+    return results;
+}
