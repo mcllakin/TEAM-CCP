@@ -285,7 +285,7 @@ const state = {
         productName: '',
         additionalItem: ''
     },
-    library: {
+    boards: {
         activeTab: 'product-official',
         data: {
             'product-official': [],
@@ -294,16 +294,15 @@ const state = {
             'gwp': []
         }
     },
-    canvas: {
-        background: 'white-gray-floor',  // 'white-gray-floor' | 'all-white' | 'all-gray'
-        items: [],                        // {id, assetId, board, label, src, xPct, yPct, wPct, hPct, rotation, z}
-        selectedId: null,
-        nextZ: 1,
-        nextItemId: 1
+    selection: {
+        product: null,         // {board, id, label, dataUrl, tier}
+        package: null,
+        gwp: null
     },
     uploads: {
         backgroundReference: null,
-        productOverride: null
+        productOverride: null,
+        compositionDraft: null
     },
     color: { hex: '#cce8d6', description: '' },
     options: { resolution: '2k', variations: 1, aspect: '1:1', additionalDirection: '' },
@@ -314,12 +313,11 @@ const state = {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 IIC AI Generator — Canvas + 6 modes');
+    console.log('🚀 IIC AI Generator — Boards + 6 modes');
     initNavigation();
     initModeSelector();
     initIdentityInputs();
-    initLibraryTabs();
-    initCanvas();
+    initBoardTabs();
     initUploads();
     initOptions();
     initDirectionTextarea();
@@ -329,8 +327,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     initOverviewModal();
     await loadBoardData();
     applyMode(state.mode);
-    renderLibrary(state.library.activeTab);
-    updateCanvasStatus();
+    renderBoard(state.boards.activeTab);
+    updateSelectionSummary();
     updateDock();
     updateAutoNamePreview();
 
@@ -342,7 +340,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.setItem('iic_overview_seen', '1');
             }, 600);
         }
-    } catch (_) { /* localStorage unavailable */ }
+    } catch (_) { /* localStorage unavailable — skip */ }
 });
 
 // ========== OVERVIEW MODAL ==========
@@ -424,16 +422,13 @@ function applyMode(modeId) {
     const needs = mode.needs;
     const refBox = document.querySelector('[data-role="reference"]');
     const productOverrideBox = document.querySelector('[data-role="product-override"]');
+    const compositionDraftBox = document.querySelector('[data-role="composition-draft"]');
     const colorRow = document.getElementById('color-row');
-    const canvasSection = document.querySelector('.canvas-section');
 
     if (refBox) refBox.classList.toggle('hidden-by-mode', needs.reference === 'hidden');
     if (productOverrideBox) productOverrideBox.classList.toggle('hidden-by-mode', needs.product === 'hidden');
+    if (compositionDraftBox) compositionDraftBox.classList.toggle('hidden-by-mode', needs.product === 'hidden');
     if (colorRow) colorRow.hidden = !needs.color;
-
-    // Single-product modes (02/03/04) don't need composition canvas
-    const singleProductModes = new Set(['bg-color', 'perfume-angle', 'perfume-glass']);
-    if (canvasSection) canvasSection.classList.toggle('hidden-by-mode', singleProductModes.has(modeId));
 
     // Reference panel label tweaks per mode
     const refLabel = document.getElementById('reference-label');
@@ -482,52 +477,43 @@ function sanitize(str) {
 
 function buildFolderName() {
     const product = sanitize(state.identity.productName) || 'product';
-    const pkg = findCanvasItemByBoard('package');
-    const pkgName = pkg ? sanitize(pkg.label) : '';
-    return pkgName ? `${product}_${pkgName}` : product;
+    const pkg = state.selection.package ? sanitize(state.selection.package.label) : '';
+    return pkg ? `${product}_${pkg}` : product;
 }
 
 function buildAutoName({ index = 1 } = {}) {
     const product = sanitize(state.identity.productName) || 'product';
-    const pkg = findCanvasItemByBoard('package');
-    const pkgName = pkg ? sanitize(pkg.label) : '';
-    const gwp = findCanvasItemByBoard('gwp');
+    const pkg = state.selection.package ? sanitize(state.selection.package.label) : '';
     const item = sanitize(state.identity.additionalItem);
     const modeNum = MODES[state.mode]?.num || '';
+    const hasGWP = !!state.selection.gwp;
 
     const parts = [product];
-    if (pkgName) parts.push(pkgName);
-    if (gwp) parts.push('GWP');
+    if (pkg) parts.push(pkg);
+    if (hasGWP) parts.push('GWP');
     if (item) parts.push(item);
     if (modeNum) parts.push(`M${modeNum}`);
     if (state.options.variations > 1) parts.push(String(index).padStart(2, '0'));
     return parts.join('_');
 }
 
-function findCanvasItemByBoard(boardId) {
-    return state.canvas.items.find(it => it.board === boardId);
-}
-
-function findCanvasProduct() {
-    return state.canvas.items.find(it => it.board === 'product-official' || it.board === 'product-draft' || it.board === 'product-upload');
-}
-
-// ========== BOARD DATA (server library) ==========
+// ========== BOARD DATA ==========
 async function loadBoardData() {
     try {
         const response = await fetch('/api/boards');
         if (response.ok) {
             const data = await response.json();
             if (data?.boards) {
-                state.library.data = { ...state.library.data, ...data.boards };
+                state.boards.data = { ...state.boards.data, ...data.boards };
                 console.log('📦 Loaded board data from /api/boards');
                 return;
             }
         }
     } catch (e) {
-        console.log('⚠️ /api/boards not available — empty boards');
+        console.log('⚠️ /api/boards not available — using empty boards');
     }
-    state.library.data = {
+    // Fall back to empty boards. Backend can populate these later.
+    state.boards.data = {
         'product-official': [],
         'product-draft': [],
         'package': [],
@@ -535,421 +521,106 @@ async function loadBoardData() {
     };
 }
 
-function initLibraryTabs() {
-    document.querySelectorAll('.library-tab').forEach(tab => {
+function initBoardTabs() {
+    document.querySelectorAll('.board-tab').forEach(tab => {
         tab.addEventListener('click', () => {
-            state.library.activeTab = tab.dataset.board;
-            document.querySelectorAll('.library-tab').forEach(t => {
+            state.boards.activeTab = tab.dataset.board;
+            document.querySelectorAll('.board-tab').forEach(t => {
                 t.classList.toggle('active', t.dataset.board === tab.dataset.board);
             });
-            renderLibrary(tab.dataset.board);
+            renderBoard(tab.dataset.board);
         });
     });
 }
 
-function renderLibrary(boardId) {
-    const strip = document.getElementById('library-strip');
-    const empty = document.getElementById('library-empty');
-    if (!strip || !empty) return;
-    strip.innerHTML = '';
+function renderBoard(boardId) {
+    const grid = document.getElementById('board-grid');
+    const empty = document.getElementById('board-empty');
+    if (!grid || !empty) return;
+    grid.innerHTML = '';
 
-    const items = state.library.data[boardId] || [];
+    const items = state.boards.data[boardId] || [];
     if (items.length === 0) {
-        strip.style.display = 'none';
+        grid.style.display = 'none';
         empty.hidden = false;
         empty.querySelector('p').textContent = boardId === 'product-official'
-            ? '공식 누끼 카테고리가 비어있습니다. 서버에 자산이 등록되면 여기에 표시됩니다.'
-            : '이 카테고리는 아직 비어있습니다.';
+            ? '공식 누끼 보드가 비어있습니다. 서버에 자산이 등록되면 표시됩니다.'
+            : '이 보드는 아직 비어있습니다.';
         return;
     }
-    strip.style.display = '';
+    grid.style.display = '';
     empty.hidden = true;
 
     items.forEach(item => {
         const el = document.createElement('div');
-        el.className = 'library-item';
-        el.title = `${item.label} — 클릭해서 캔버스에 추가`;
+        el.className = 'board-item';
+        el.style.backgroundImage = `url(${item.thumbnail || item.dataUrl})`;
 
-        const img = document.createElement('img');
-        img.className = 'library-item-img';
-        img.src = item.thumbnail || item.dataUrl;
-        img.alt = item.label;
-        img.loading = 'lazy';
-        el.appendChild(img);
+        // Determine selection key based on board type
+        const selectionKey = boardId === 'gwp' ? 'gwp'
+                           : boardId === 'package' ? 'package'
+                           : 'product';
+
+        const isSelected = state.selection[selectionKey]?.id === item.id;
+        if (isSelected) el.classList.add('selected');
 
         // Tier badge for product boards
         if (boardId === 'product-official' || boardId === 'product-draft') {
             const tier = document.createElement('div');
-            tier.className = `library-item-tier ${boardId === 'product-official' ? 'official' : 'draft'}`;
+            tier.className = `board-item-tier ${boardId === 'product-official' ? 'official' : 'draft'}`;
             tier.textContent = boardId === 'product-official' ? 'OFFICIAL' : 'DRAFT';
             el.appendChild(tier);
         }
 
         const label = document.createElement('div');
-        label.className = 'library-item-label';
+        label.className = 'board-item-label';
         label.textContent = item.label || item.id;
         el.appendChild(label);
 
-        const add = document.createElement('div');
-        add.className = 'library-item-add';
-        add.textContent = '+';
-        el.appendChild(add);
-
-        el.addEventListener('click', () => addCanvasItem({ ...item, board: boardId }));
-        strip.appendChild(el);
+        el.addEventListener('click', () => toggleBoardSelection(boardId, item));
+        grid.appendChild(el);
     });
 }
 
-// ========== CANVAS — free composition area ==========
-function initCanvas() {
-    // Background switcher
-    document.querySelectorAll('.bg-option').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const bg = btn.dataset.bg;
-            state.canvas.background = bg;
-            document.querySelectorAll('.bg-option').forEach(b => b.classList.toggle('active', b === btn));
-            const stage = document.getElementById('canvas-stage');
-            if (stage) stage.setAttribute('data-bg', bg);
-        });
-    });
+function toggleBoardSelection(boardId, item) {
+    const selectionKey = boardId === 'gwp' ? 'gwp'
+                       : boardId === 'package' ? 'package'
+                       : 'product';
+    const tier = boardId === 'product-official' ? 'official'
+               : boardId === 'product-draft' ? 'draft'
+               : null;
 
-    // Clear button
-    document.getElementById('canvas-clear')?.addEventListener('click', () => {
-        if (state.canvas.items.length === 0) return;
-        if (confirm('캔버스의 모든 자산을 제거하시겠습니까?')) {
-            state.canvas.items = [];
-            state.canvas.selectedId = null;
-            renderCanvas();
-            updateCanvasStatus();
-            updateAutoNamePreview();
-            updateDock();
-        }
-    });
-
-    // Deselect when clicking outside any item
-    document.getElementById('canvas-stage')?.addEventListener('mousedown', (e) => {
-        if (e.target.id === 'canvas-stage' || e.target.classList.contains('canvas-bg') || e.target.classList.contains('canvas-floor') || e.target.classList.contains('canvas-items')) {
-            state.canvas.selectedId = null;
-            renderCanvas();
-        }
-    });
-}
-
-function addCanvasItem(asset) {
-    const stage = document.getElementById('canvas-stage');
-    if (!stage) return;
-
-    // Default placement: center, sized ~30% of canvas
-    const newItem = {
-        id: `item-${state.canvas.nextItemId++}`,
-        assetId: asset.id,
-        board: asset.board,
-        label: asset.label,
-        src: asset.dataUrl || asset.thumbnail,
-        xPct: 35 + Math.random() * 10,   // 35~45%
-        yPct: 30 + Math.random() * 10,
-        wPct: 30,
-        hPct: 30,
-        rotation: 0,
-        z: state.canvas.nextZ++
-    };
-    state.canvas.items.push(newItem);
-    state.canvas.selectedId = newItem.id;
-    renderCanvas();
-    updateCanvasStatus();
-    updateAutoNamePreview();
-    updateDock();
-    toast(`${asset.label} 추가됨`);
-}
-
-function renderCanvas() {
-    const container = document.getElementById('canvas-items');
-    const stage = document.getElementById('canvas-stage');
-    if (!container || !stage) return;
-
-    container.innerHTML = '';
-    stage.classList.toggle('has-items', state.canvas.items.length > 0);
-
-    state.canvas.items.forEach(item => {
-        const el = document.createElement('div');
-        el.className = 'canvas-item';
-        if (state.canvas.selectedId === item.id) el.classList.add('selected');
-        el.dataset.itemId = item.id;
-        el.style.left = `${item.xPct}%`;
-        el.style.top = `${item.yPct}%`;
-        el.style.width = `${item.wPct}%`;
-        el.style.height = `${item.hPct}%`;
-        el.style.transform = `rotate(${item.rotation}deg)`;
-        el.style.zIndex = item.z;
-
-        const img = document.createElement('img');
-        img.className = 'canvas-item-img';
-        img.src = item.src;
-        img.alt = item.label;
-        img.draggable = false;
-        el.appendChild(img);
-
-        // Resize handles
-        ['nw', 'ne', 'sw', 'se'].forEach(corner => {
-            const h = document.createElement('div');
-            h.className = `canvas-item-handle h-${corner}`;
-            h.dataset.corner = corner;
-            el.appendChild(h);
-        });
-
-        // Rotate handle
-        const rot = document.createElement('div');
-        rot.className = 'canvas-item-rotate';
-        rot.title = '회전';
-        el.appendChild(rot);
-
-        // Delete button
-        const del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'canvas-item-delete';
-        del.innerHTML = '×';
-        del.title = '제거';
-        del.addEventListener('click', (e) => {
-            e.stopPropagation();
-            removeCanvasItem(item.id);
-        });
-        el.appendChild(del);
-
-        // Interactions
-        attachItemInteractions(el, item);
-        container.appendChild(el);
-    });
-}
-
-function removeCanvasItem(itemId) {
-    state.canvas.items = state.canvas.items.filter(it => it.id !== itemId);
-    if (state.canvas.selectedId === itemId) state.canvas.selectedId = null;
-    renderCanvas();
-    updateCanvasStatus();
-    updateAutoNamePreview();
-    updateDock();
-}
-
-function attachItemInteractions(el, item) {
-    const stage = document.getElementById('canvas-stage');
-    if (!stage) return;
-
-    // Drag (mousedown on element body — not on handles or delete)
-    el.addEventListener('mousedown', (e) => {
-        if (e.target.classList.contains('canvas-item-handle')) return;
-        if (e.target.classList.contains('canvas-item-rotate')) return;
-        if (e.target.classList.contains('canvas-item-delete')) return;
-
-        e.preventDefault();
-        // Select + bring to front
-        state.canvas.selectedId = item.id;
-        item.z = state.canvas.nextZ++;
-        renderCanvas();
-
-        const stageRect = stage.getBoundingClientRect();
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const startXPct = item.xPct;
-        const startYPct = item.yPct;
-
-        function onMove(ev) {
-            const dx = ((ev.clientX - startX) / stageRect.width) * 100;
-            const dy = ((ev.clientY - startY) / stageRect.height) * 100;
-            item.xPct = Math.max(-20, Math.min(110 - item.wPct, startXPct + dx));
-            item.yPct = Math.max(-20, Math.min(110 - item.hPct, startYPct + dy));
-            const liveEl = stage.querySelector(`[data-item-id="${item.id}"]`);
-            if (liveEl) {
-                liveEl.style.left = `${item.xPct}%`;
-                liveEl.style.top = `${item.yPct}%`;
-            }
-        }
-        function onUp() {
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
-        }
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
-    });
-
-    // Resize via corner handles
-    el.querySelectorAll('.canvas-item-handle').forEach(handle => {
-        handle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            state.canvas.selectedId = item.id;
-
-            const stageRect = stage.getBoundingClientRect();
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const startW = item.wPct;
-            const startH = item.hPct;
-            const startXPct = item.xPct;
-            const startYPct = item.yPct;
-            const corner = handle.dataset.corner;
-            const aspectRatio = item.wPct / item.hPct;
-
-            function onMove(ev) {
-                const dx = ((ev.clientX - startX) / stageRect.width) * 100;
-                const dy = ((ev.clientY - startY) / stageRect.height) * 100;
-                let newW = startW;
-                let newH = startH;
-                let newX = startXPct;
-                let newY = startYPct;
-
-                // For corner resize, use the diagonal motion; lock aspect ratio when shift not held
-                const keepAspect = !ev.shiftKey;
-
-                if (corner === 'se') {
-                    newW = Math.max(5, startW + dx);
-                    newH = keepAspect ? newW / aspectRatio : Math.max(5, startH + dy);
-                } else if (corner === 'sw') {
-                    newW = Math.max(5, startW - dx);
-                    newH = keepAspect ? newW / aspectRatio : Math.max(5, startH + dy);
-                    newX = startXPct + (startW - newW);
-                } else if (corner === 'ne') {
-                    newW = Math.max(5, startW + dx);
-                    newH = keepAspect ? newW / aspectRatio : Math.max(5, startH - dy);
-                    newY = startYPct + (startH - newH);
-                } else if (corner === 'nw') {
-                    newW = Math.max(5, startW - dx);
-                    newH = keepAspect ? newW / aspectRatio : Math.max(5, startH - dy);
-                    newX = startXPct + (startW - newW);
-                    newY = startYPct + (startH - newH);
-                }
-
-                item.wPct = newW;
-                item.hPct = newH;
-                item.xPct = newX;
-                item.yPct = newY;
-
-                const liveEl = stage.querySelector(`[data-item-id="${item.id}"]`);
-                if (liveEl) {
-                    liveEl.style.width = `${item.wPct}%`;
-                    liveEl.style.height = `${item.hPct}%`;
-                    liveEl.style.left = `${item.xPct}%`;
-                    liveEl.style.top = `${item.yPct}%`;
-                }
-            }
-            function onUp() {
-                window.removeEventListener('mousemove', onMove);
-                window.removeEventListener('mouseup', onUp);
-            }
-            window.addEventListener('mousemove', onMove);
-            window.addEventListener('mouseup', onUp);
-        });
-    });
-
-    // Rotate
-    el.querySelector('.canvas-item-rotate')?.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        state.canvas.selectedId = item.id;
-
-        const rect = el.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const startAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * 180 / Math.PI;
-        const startRotation = item.rotation;
-
-        function onMove(ev) {
-            const currentAngle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX) * 180 / Math.PI;
-            let newRot = startRotation + (currentAngle - startAngle);
-            // Snap every 15deg with shift, otherwise free
-            if (ev.shiftKey) newRot = Math.round(newRot / 15) * 15;
-            item.rotation = newRot;
-            const liveEl = stage.querySelector(`[data-item-id="${item.id}"]`);
-            if (liveEl) liveEl.style.transform = `rotate(${item.rotation}deg)`;
-        }
-        function onUp() {
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
-        }
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
-    });
-}
-
-function updateCanvasStatus() {
-    const el = document.getElementById('canvas-count');
-    if (el) el.textContent = `${state.canvas.items.length}개 배치됨`;
-}
-
-// Rasterize the canvas to a PNG dataURL — sent to backend as composition guide
-async function rasterizeCanvas() {
-    const stage = document.getElementById('canvas-stage');
-    if (!stage || state.canvas.items.length === 0) return null;
-
-    const rect = stage.getBoundingClientRect();
-    const W = 1280;  // export resolution
-    const H = Math.round((W / rect.width) * rect.height);
-
-    const cnv = document.createElement('canvas');
-    cnv.width = W;
-    cnv.height = H;
-    const ctx = cnv.getContext('2d');
-
-    // Background
-    const bg = state.canvas.background;
-    if (bg === 'white-gray-floor') {
-        // White wall (top 60%)
-        const wallGrad = ctx.createLinearGradient(0, 0, 0, H * 0.6);
-        wallGrad.addColorStop(0, '#ffffff');
-        wallGrad.addColorStop(1, '#f6f6f6');
-        ctx.fillStyle = wallGrad;
-        ctx.fillRect(0, 0, W, H * 0.6);
-        // Gray floor (bottom 40%)
-        const floorGrad = ctx.createLinearGradient(0, H * 0.6, 0, H);
-        floorGrad.addColorStop(0, '#c8c8c8');
-        floorGrad.addColorStop(1, '#b2b2b2');
-        ctx.fillStyle = floorGrad;
-        ctx.fillRect(0, H * 0.6, W, H * 0.4);
-    } else if (bg === 'all-white') {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, W, H);
-    } else if (bg === 'all-gray') {
-        ctx.fillStyle = '#b8b8b8';
-        ctx.fillRect(0, 0, W, H);
+    const current = state.selection[selectionKey];
+    if (current?.id === item.id) {
+        state.selection[selectionKey] = null;
+    } else {
+        state.selection[selectionKey] = { ...item, board: boardId, tier };
     }
-
-    // Sort items by z-index
-    const sorted = [...state.canvas.items].sort((a, b) => a.z - b.z);
-
-    // Preload all images
-    const imgs = await Promise.all(sorted.map(item => loadImage(item.src)));
-
-    sorted.forEach((item, idx) => {
-        const img = imgs[idx];
-        if (!img) return;
-        const x = (item.xPct / 100) * W;
-        const y = (item.yPct / 100) * H;
-        const w = (item.wPct / 100) * W;
-        const h = (item.hPct / 100) * H;
-
-        ctx.save();
-        // Rotate around item center
-        ctx.translate(x + w / 2, y + h / 2);
-        ctx.rotate(item.rotation * Math.PI / 180);
-        ctx.drawImage(img, -w / 2, -h / 2, w, h);
-        ctx.restore();
-    });
-
-    return cnv.toDataURL('image/png');
+    renderBoard(boardId);
+    updateSelectionSummary();
+    updateAutoNamePreview();
+    updateDock();
 }
 
-function loadImage(src) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => resolve(img);
-        img.onerror = () => resolve(null);
-        img.src = src;
-    });
+function updateSelectionSummary() {
+    const el = document.getElementById('selected-text');
+    if (!el) return;
+    const parts = [];
+    if (state.selection.product) {
+        const tag = state.selection.product.tier === 'official' ? '공식' : '드래프트';
+        parts.push(`제품: ${state.selection.product.label} (${tag})`);
+    }
+    if (state.selection.package) parts.push(`패키지: ${state.selection.package.label}`);
+    if (state.selection.gwp) parts.push(`GWP: ${state.selection.gwp.label}`);
+
+    el.textContent = parts.length ? parts.join(' · ') : '선택된 자산 없음 — 보드에서 클릭해 선택하세요';
 }
 
 // ========== UPLOADS ==========
 function initUploads() {
     initSingleUpload('backgroundReference');
     initSingleUpload('productOverride');
+    initSingleUpload('compositionDraft');
 
     document.querySelectorAll('.upload-btn').forEach(button => {
         button.addEventListener('click', (event) => {
@@ -994,17 +665,6 @@ async function handleSingleImage(file, type, preview, box, status) {
         box.classList.add('has-image');
         if (status) { status.textContent = 'LOADED'; status.classList.add('filled'); }
         toast(`업로드 완료`);
-
-        // If it's a draft product cutout, drop it onto the canvas automatically
-        if (type === 'productOverride') {
-            addCanvasItem({
-                id: `upload-${Date.now()}`,
-                board: 'product-upload',
-                label: file.name.replace(/\.[^.]+$/, '') || 'Custom Draft',
-                dataUrl: dataUrl,
-                thumbnail: dataUrl
-            });
-        }
         updateDock();
     } catch (error) {
         toast(error.message, 'error');
@@ -1085,17 +745,9 @@ function initColorPicker() {
 
 // ========== READINESS ==========
 function getActiveProduct() {
-    // Priority: product on canvas (official > draft > upload)
-    const productItems = state.canvas.items.filter(it =>
-        it.board === 'product-official' || it.board === 'product-draft' || it.board === 'product-upload'
-    );
-    if (productItems.length > 0) {
-        const top = productItems[productItems.length - 1];
-        const tier = top.board === 'product-official' ? 'official'
-                   : top.board === 'product-draft' ? 'draft' : 'override';
-        return { dataUrl: top.src, tier, label: top.label };
+    if (state.selection.product) {
+        return { dataUrl: state.selection.product.dataUrl, tier: state.selection.product.tier, label: state.selection.product.label };
     }
-    // Fallback: standalone product override upload (in case mode hides canvas)
     if (state.uploads.productOverride) {
         return { dataUrl: state.uploads.productOverride, tier: 'override', label: 'custom' };
     }
@@ -1125,8 +777,8 @@ function updateDock() {
         dot.classList.add('ready');
         const v = state.options.variations;
         const extras = [];
-        if (findCanvasItemByBoard('gwp')) extras.push('GWP');
-        if (findCanvasItemByBoard('package')) extras.push('패키지');
+        if (state.selection.gwp) extras.push('GWP');
+        if (state.selection.package) extras.push('패키지');
         const extraText = extras.length ? ` · ${extras.join('+')}` : '';
         text.textContent = `준비 완료 — ${v}장${extraText}`;
     } else {
@@ -1158,11 +810,9 @@ async function generateImages() {
 
     try {
         const product = getActiveProduct();
-        const gwpItem = findCanvasItemByBoard('gwp');
-        const pkgItem = findCanvasItemByBoard('package');
         const ctx = {
-            hasPackage: !!pkgItem && mode.needs.package !== 'hidden',
-            hasGWP: !!gwpItem && mode.needs.gwp !== 'hidden',
+            hasPackage: !!state.selection.package && mode.needs.package !== 'hidden',
+            hasGWP: !!state.selection.gwp && mode.needs.gwp !== 'hidden',
             additionalDirection: state.options.additionalDirection,
             colorHex: state.color.hex,
             colorDescription: state.color.description
@@ -1170,19 +820,11 @@ async function generateImages() {
 
         const prompt = mode.buildPrompt(ctx);
 
-        // Resolve image URLs to data URLs
-        setLoadingSubtext('자산 준비 중...');
+        // Resolve any image URLs to data URLs (the backend expects base64)
+        setLoadingSubtext('이미지 준비 중...');
         const productDataUrl = product ? await ensureDataUrl(product.dataUrl) : null;
-        const gwpDataUrl = ctx.hasGWP ? await ensureDataUrl(gwpItem.src) : null;
-        const packageDataUrl = ctx.hasPackage ? await ensureDataUrl(pkgItem.src) : null;
-
-        // Rasterize the canvas as composition guide (only when canvas has 2+ items)
-        let compositionGuide = null;
-        if (state.canvas.items.length >= 2) {
-            setLoadingSubtext('캔버스 구도 캡처 중...');
-            compositionGuide = await rasterizeCanvas();
-        }
-
+        const gwpDataUrl = ctx.hasGWP ? await ensureDataUrl(state.selection.gwp.dataUrl) : null;
+        const packageDataUrl = ctx.hasPackage ? await ensureDataUrl(state.selection.package.dataUrl) : null;
         setLoadingSubtext(`Mode ${mode.num} · ${mode.label} · ${state.options.variations}장 생성 중...`);
 
         const requestData = {
@@ -1197,7 +839,7 @@ async function generateImages() {
                 background_reference: mode.needs.reference !== 'hidden' ? state.uploads.backgroundReference : null,
                 gwp: gwpDataUrl,
                 package: packageDataUrl,
-                composition_guide: compositionGuide
+                composition_guide: state.uploads.compositionDraft || null
             },
             identity: {
                 product_name: state.identity.productName || 'product',
@@ -1359,21 +1001,36 @@ function toast(message, type = 'info') {
 
 // Debug helpers
 window.IIC = {
-    getState: () => ({
-        mode: state.mode,
-        canvas: state.canvas.items.map(i => ({ id: i.id, board: i.board, label: i.label, pos: `${i.xPct.toFixed(1)},${i.yPct.toFixed(1)} @ ${i.wPct.toFixed(1)}x${i.hPct.toFixed(1)} rot${i.rotation.toFixed(0)}` })),
-        identity: state.identity
-    }),
+    getState: () => ({ mode: state.mode, selection: state.selection, identity: state.identity }),
     listModes: () => Object.keys(MODES),
     previewPrompt: () => MODES[state.mode].buildPrompt({
-        hasPackage: !!findCanvasItemByBoard('package'),
-        hasGWP: !!findCanvasItemByBoard('gwp'),
+        hasPackage: !!state.selection.package,
+        hasGWP: !!state.selection.gwp,
         additionalDirection: state.options.additionalDirection,
         colorHex: state.color.hex,
         colorDescription: state.color.description
     }),
-    rasterize: () => rasterizeCanvas().then(url => {
-        console.log('Canvas rasterized — opening preview');
-        if (url) window.open(url, '_blank');
-    })
+    setMockBoards: () => {
+        // For demo purposes: inject mock data into boards if /api/boards is empty.
+        // Call IIC.setMockBoards() in the console to see the UI populated.
+        state.boards.data = {
+            'product-official': [
+                { id: 'shell30ml-sunshine', label: 'SHELL 30ml — SUNSHINE', thumbnail: '', dataUrl: '' },
+                { id: 'shell30ml-evening', label: 'SHELL 30ml — EVENING GLOW', thumbnail: '', dataUrl: '' }
+            ],
+            'product-draft': [
+                { id: 'shell30ml-summer-draft', label: 'SHELL 30ml — SUMMER (draft)', thumbnail: '', dataUrl: '' }
+            ],
+            'package': [
+                { id: 'heart-blue-ribbon', label: 'Heart box · Blue ribbon', thumbnail: '', dataUrl: '' },
+                { id: 'heart-pink-ribbon', label: 'Heart box · Pink ribbon', thumbnail: '', dataUrl: '' }
+            ],
+            'gwp': [
+                { id: 'blue-hinoki-2ml', label: 'BLUE HINOKI 2ml perfume', thumbnail: '', dataUrl: '' },
+                { id: 'sunshine-keyring', label: 'SUNSHINE dog keyring', thumbnail: '', dataUrl: '' }
+            ]
+        };
+        renderBoard(state.boards.activeTab);
+        toast('Mock boards loaded');
+    }
 };
