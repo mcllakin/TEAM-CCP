@@ -175,12 +175,12 @@ body {
 
 .hero-grid {
     display: grid;
-    grid-template-columns: 1.5fr 1fr;
-    gap: 60px;
+    grid-template-columns: 1fr;
+    gap: 0;
     align-items: center;
 }
 
-.hero-content { max-width: 640px; }
+.hero-content { max-width: 760px; }
 
 .hero-eyebrow {
     display: inline-block;
@@ -225,104 +225,6 @@ body {
     letter-spacing: 0.6px;
     color: var(--on-dark-mute);
     text-transform: uppercase;
-}
-
-/* Hero Visual — logo symbol with prism/glass treatment */
-.hero-visual {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.hero-symbol {
-    position: relative;
-    width: 320px;
-    height: 320px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Soft ambient aura — keeps it from feeling stranded against pure black */
-.hero-symbol-aura {
-    position: absolute;
-    inset: 8%;
-    border-radius: 50%;
-    background:
-        radial-gradient(circle at 50% 50%,
-            rgba(255, 255, 255, 0.10) 0%,
-            rgba(140, 170, 255, 0.06) 28%,
-            rgba(255, 140, 200, 0.04) 50%,
-            transparent 72%);
-    filter: blur(36px);
-    animation: hero-aura-breathe 5.5s ease-in-out infinite;
-}
-
-/* Prismatic chromatic ring — gives the glass refraction feel */
-.hero-symbol-prism {
-    position: absolute;
-    inset: 18%;
-    border-radius: 50%;
-    background: conic-gradient(
-        from 0deg,
-        rgba(255, 255, 255, 0)   0%,
-        rgba(140, 200, 255, 0.18) 12%,
-        rgba(255, 255, 255, 0)  22%,
-        rgba(255, 170, 220, 0.18) 38%,
-        rgba(255, 255, 255, 0)  48%,
-        rgba(170, 255, 220, 0.16) 64%,
-        rgba(255, 255, 255, 0)  74%,
-        rgba(220, 200, 255, 0.16) 88%,
-        rgba(255, 255, 255, 0) 100%
-    );
-    filter: blur(22px);
-    mix-blend-mode: screen;
-    animation: hero-prism-rotate 26s linear infinite;
-}
-
-/* The actual K mark — refined glass treatment via filters */
-.hero-symbol-img {
-    position: relative;
-    width: 230px;
-    height: 230px;
-    object-fit: contain;
-    z-index: 2;
-    /* Multiple drop-shadows simulate chromatic aberration / prism dispersion */
-    filter:
-        drop-shadow(0 0 1px rgba(160, 220, 255, 0.85))
-        drop-shadow(0 0 0.5px rgba(255, 170, 220, 0.7))
-        drop-shadow(0 0 14px rgba(200, 220, 255, 0.55))
-        drop-shadow(0 0 32px rgba(150, 180, 255, 0.30))
-        drop-shadow(0 0 60px rgba(120, 160, 255, 0.18));
-    animation: hero-symbol-shimmer 6s ease-in-out infinite;
-}
-
-@keyframes hero-aura-breathe {
-    0%, 100% { opacity: 1;    transform: scale(1); }
-    50%      { opacity: 0.75; transform: scale(1.06); }
-}
-
-@keyframes hero-prism-rotate {
-    to { transform: rotate(360deg); }
-}
-
-@keyframes hero-symbol-shimmer {
-    0%, 100% {
-        filter:
-            drop-shadow(0 0 1px rgba(160, 220, 255, 0.85))
-            drop-shadow(0 0 0.5px rgba(255, 170, 220, 0.7))
-            drop-shadow(0 0 14px rgba(200, 220, 255, 0.55))
-            drop-shadow(0 0 32px rgba(150, 180, 255, 0.30))
-            drop-shadow(0 0 60px rgba(120, 160, 255, 0.18));
-    }
-    50% {
-        filter:
-            drop-shadow(0 0 1.5px rgba(180, 240, 255, 0.9))
-            drop-shadow(0 0 0.5px rgba(255, 190, 235, 0.8))
-            drop-shadow(0 0 18px rgba(220, 230, 255, 0.65))
-            drop-shadow(0 0 40px rgba(180, 200, 255, 0.36))
-            drop-shadow(0 0 72px rgba(150, 180, 255, 0.22));
-    }
 }
 
 /* ================= SECTION ================= */
@@ -1535,8 +1437,6 @@ body {
     .nav-overview-btn span { display: none; }
     .nav-overview-btn { padding: 6px 8px; }
     .hero-grid { grid-template-columns: 1fr; gap: 30px; }
-    .hero-symbol { width: 220px; height: 220px; }
-    .hero-symbol-img { width: 140px; height: 140px; }
     .mode-selector { grid-template-columns: repeat(3, 1fr); }
     .upload-grid { grid-template-columns: 1fr 1fr; }
     .upload-grid > .upload-box:first-child { grid-column: 1 / -1; }
@@ -1558,8 +1458,6 @@ body {
     .hero-title { font-size: 36px; }
     .hero-sub { font-size: 14.5px; }
     .hero-link-btn { font-size: 11.5px; padding: 9px 14px; }
-    .hero-symbol { width: 180px; height: 180px; }
-    .hero-symbol-img { width: 110px; height: 110px; }
     .section { padding: 36px 0 28px; }
     .section-title { font-size: 26px; }
     .mode-selector { grid-template-columns: repeat(2, 1fr); gap: 6px; }
