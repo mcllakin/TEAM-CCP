@@ -64,6 +64,8 @@
 
             <div class="hero-visual" aria-hidden="true">
                 <div class="hero-symbol">
+                    <div class="hero-symbol-aura"></div>
+                    <div class="hero-symbol-prism"></div>
                     <img src="images/logo.png" alt="" class="hero-symbol-img">
                 </div>
             </div>
@@ -127,102 +129,58 @@
                 </div>
             </div>
 
-            <!-- ===== ASSET CANVAS — server library on top, free canvas below ===== -->
-            <div class="canvas-section">
-                <div class="canvas-section-header">
+            <!-- ===== ASSET BOARDS (server-pulled) ===== -->
+            <div class="board-section">
+                <div class="board-section-header">
                     <div>
-                        <h3 class="canvas-title">Composition Canvas <span class="canvas-tag-server">SERVER</span></h3>
-                        <p class="canvas-sub">위에서 서버 누끼를 가져와, 아래 캔버스에서 직접 배치·크기조절·회전합니다. 이 캔버스가 그대로 구도 가이드로 사용됩니다.</p>
+                        <h3 class="board-title">Asset Boards <span class="board-tag-server">SERVER</span></h3>
+                        <p class="board-sub">CCP 서버의 누끼·미학 라이브러리에서 선택. 사용자가 직접 업로드할 필요 없습니다.</p>
                     </div>
                 </div>
 
-                <!-- LIBRARY: category picker → asset thumbnails → click to add to canvas -->
-                <div class="library">
-                    <div class="library-tabs" id="library-tabs">
-                        <button type="button" class="library-tab active" data-board="product-official">
-                            <span class="library-tab-label">Product · Official</span>
-                            <span class="library-tab-tag">공식 누끼</span>
-                        </button>
-                        <button type="button" class="library-tab" data-board="product-draft">
-                            <span class="library-tab-label">Product · AI Draft</span>
-                            <span class="library-tab-tag">드래프트</span>
-                        </button>
-                        <button type="button" class="library-tab" data-board="package">
-                            <span class="library-tab-label">Package &amp; Ribbon</span>
-                            <span class="library-tab-tag">패키지</span>
-                        </button>
-                        <button type="button" class="library-tab" data-board="gwp">
-                            <span class="library-tab-label">GWP Objects</span>
-                            <span class="library-tab-tag">사은품</span>
-                        </button>
-                    </div>
-
-                    <div class="library-strip" id="library-strip">
-                        <!-- Populated by JS — click to add to canvas -->
-                    </div>
-
-                    <div class="library-empty" id="library-empty" hidden>
-                        <p>이 카테고리는 비어있습니다. 서버에 자산이 등록되면 표시됩니다.</p>
-                    </div>
+                <div class="board-tabs" id="board-tabs">
+                    <button type="button" class="board-tab active" data-board="product-official">
+                        <span class="board-tab-num">A</span>
+                        <span class="board-tab-label">Product · Official</span>
+                        <span class="board-tab-tag">공식 누끼</span>
+                    </button>
+                    <button type="button" class="board-tab" data-board="product-draft">
+                        <span class="board-tab-num">B</span>
+                        <span class="board-tab-label">Product · AI Draft</span>
+                        <span class="board-tab-tag">드래프트 누끼</span>
+                    </button>
+                    <button type="button" class="board-tab" data-board="package">
+                        <span class="board-tab-num">C</span>
+                        <span class="board-tab-label">Package &amp; Ribbon</span>
+                        <span class="board-tab-tag">패키지 구성</span>
+                    </button>
+                    <button type="button" class="board-tab" data-board="gwp">
+                        <span class="board-tab-num">D</span>
+                        <span class="board-tab-label">GWP Objects</span>
+                        <span class="board-tab-tag">사은품</span>
+                    </button>
                 </div>
 
-                <!-- CANVAS: white-bg + gray-floor backdrop, items can be dragged/resized -->
-                <div class="canvas-wrap">
-                    <div class="canvas-toolbar">
-                        <div class="canvas-tool-group">
-                            <span class="canvas-tool-label">Background</span>
-                            <div class="bg-options" id="bg-options">
-                                <button type="button" class="bg-option active" data-bg="white-gray-floor" title="흰 벽 + 회색 바닥">
-                                    <span class="bg-swatch bg-white-gray"></span>
-                                    <span class="bg-name">Studio</span>
-                                </button>
-                                <button type="button" class="bg-option" data-bg="all-white" title="순백">
-                                    <span class="bg-swatch bg-all-white"></span>
-                                    <span class="bg-name">White</span>
-                                </button>
-                                <button type="button" class="bg-option" data-bg="all-gray" title="회색">
-                                    <span class="bg-swatch bg-all-gray"></span>
-                                    <span class="bg-name">Gray</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="canvas-actions">
-                            <button type="button" class="canvas-action-btn" id="canvas-clear" title="전체 비우기">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"></path>
-                                </svg>
-                                <span>Clear</span>
-                            </button>
-                        </div>
-                    </div>
+                <div class="board-grid" id="board-grid">
+                    <!-- Populated by JS from /api/boards -->
+                </div>
 
-                    <div class="canvas-stage" id="canvas-stage" data-bg="white-gray-floor">
-                        <div class="canvas-bg" id="canvas-bg"></div>
-                        <div class="canvas-floor" id="canvas-floor"></div>
-                        <div class="canvas-items" id="canvas-items"></div>
-                        <div class="canvas-hint" id="canvas-hint">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M5 12h14M5 12l4-4M5 12l4 4"/>
-                            </svg>
-                            <span>위에서 자산을 클릭해 캔버스로 가져오세요. 드래그로 위치, 모서리 핸들로 크기, 상단 핸들로 회전합니다.</span>
-                        </div>
-                    </div>
+                <div class="board-empty" id="board-empty" hidden>
+                    <p>이 보드는 아직 비어있습니다. 서버에 자산이 등록되면 자동으로 표시됩니다.</p>
+                </div>
 
-                    <div class="canvas-status">
-                        <span id="canvas-count">0개 배치됨</span>
-                        <span class="canvas-status-sep">·</span>
-                        <span>이 캔버스가 Composition Draft로 전송됩니다</span>
-                    </div>
+                <div class="selected-summary" id="selected-summary">
+                    <span class="selected-tag">SELECTED</span>
+                    <span class="selected-text" id="selected-text">선택된 자산 없음</span>
                 </div>
             </div>
 
-            <!-- ===== USER UPLOADS — only reference + custom draft cutout ===== -->
+            <!-- ===== USER UPLOADS ===== -->
             <div class="upload-section">
-                <div class="canvas-section-header">
+                <div class="board-section-header">
                     <div>
-                        <h3 class="canvas-title">Your Uploads <span class="canvas-tag-user">USER</span></h3>
-                        <p class="canvas-sub">레퍼런스 한 장과, 서버 보드에 없는 신규 제품 누끼만 직접 업로드합니다.</p>
+                        <h3 class="board-title">Your Uploads <span class="board-tag-user">USER</span></h3>
+                        <p class="board-sub">레퍼런스는 직접 업로드합니다. 제품 누끼를 서버 보드에서 못 찾을 때만 임시 업로드.</p>
                     </div>
                 </div>
 
@@ -241,14 +199,26 @@
 
                     <div class="upload-box" data-upload="productOverride" data-role="product-override">
                         <div class="upload-meta">
-                            <span class="upload-tag">DRAFT CUTOUT <span class="upload-tag-opt">선택</span></span>
+                            <span class="upload-tag">PRODUCT OVERRIDE <span class="upload-tag-opt">선택</span></span>
                             <span class="upload-status" id="status-productOverride">EMPTY</span>
                         </div>
-                        <div class="upload-label">Custom Draft Cutout</div>
-                        <p class="upload-desc">서버 보드에 없는 신규 제품 누끼. 업로드 시 자동으로 캔버스로 가져옵니다.</p>
+                        <div class="upload-label">Custom Product Cutout</div>
+                        <p class="upload-desc">서버 보드에 없는 신규 제품일 때만 사용. 공식 누끼가 아닌 임시 자산으로 분류됩니다.</p>
                         <input type="file" id="upload-productOverride" accept="image/*" class="upload-input" hidden>
                         <button type="button" class="upload-btn" data-target="upload-productOverride">UPLOAD CUTOUT</button>
                         <div class="upload-preview" id="preview-productOverride"></div>
+                    </div>
+
+                    <div class="upload-box" data-upload="compositionDraft" data-role="composition-draft">
+                        <div class="upload-meta">
+                            <span class="upload-tag">COMPOSITION DRAFT <span class="upload-tag-opt">선택</span></span>
+                            <span class="upload-status" id="status-compositionDraft">EMPTY</span>
+                        </div>
+                        <div class="upload-label">Layout Draft</div>
+                        <p class="upload-desc">제품·GWP·패키지를 원하는 위치에 배치한 누끼 합성 이미지. 업로드 시 구도가 락됩니다.</p>
+                        <input type="file" id="upload-compositionDraft" accept="image/*" class="upload-input" hidden>
+                        <button type="button" class="upload-btn" data-target="upload-compositionDraft">UPLOAD DRAFT</button>
+                        <div class="upload-preview" id="preview-compositionDraft"></div>
                     </div>
                 </div>
             </div>
