@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IIC AI Generator — CCP</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
+    <link rel="apple-touch-icon" href="images/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -144,10 +146,11 @@
                                     <span class="bg-swatch bg-studio"></span>
                                     <span class="bg-name">스튜디오</span>
                                 </button>
-                                <button type="button" class="bg-option" data-bg="solid-white" title="단일색상 — 흰색">
-                                    <span class="bg-swatch bg-solid-white"></span>
+                                <button type="button" class="bg-option" data-bg="solid" title="단일색상 — RGB 직접 선택">
+                                    <span class="bg-swatch bg-solid-preview" id="bg-solid-preview"></span>
                                     <span class="bg-name">단일색상</span>
                                 </button>
+                                <input type="color" id="bg-color-input" class="bg-color-input" value="#ffffff" title="배경색 선택">
                             </div>
                         </div>
 
@@ -214,6 +217,7 @@
                         <button type="button" class="browser-tab" data-board="product-draft">임시 누끼</button>
                         <button type="button" class="browser-tab" data-board="package">패키지</button>
                         <button type="button" class="browser-tab" data-board="gwp">GWP</button>
+                        <button type="button" class="browser-tab" data-board="reference-thumbnails">기존 썸네일</button>
                     </div>
 
                     <div class="browser-search">
@@ -280,48 +284,9 @@
         </div>
     </section>
 
-    <!-- ============== STEP 02 — DIRECTION & OPTIONS ============== -->
-    <section class="section section-tight" data-section="2">
+    <!-- ============== STEP 02 — RESULTS (생성 결과만) ============== -->
+    <section class="section section-tight section-results" data-section="2">
         <div class="container">
-            <div class="section-header">
-                <div>
-                    <h2 class="section-title">Direction</h2>
-                    <p class="section-sub">한 줄이면 충분합니다. 모드별 마스터 프롬프트가 항상 적용됩니다.</p>
-                </div>
-                <span class="section-number">02</span>
-            </div>
-
-            <div class="direction-row">
-                <div class="direction-panel">
-                    <div class="direction-meta-top">
-                        <span class="direction-tag">ADDITIONAL DIRECTION</span>
-                        <span id="direction-count" class="direction-counter">0 / 400</span>
-                    </div>
-                    <textarea id="additional-direction" class="direction-textarea" maxlength="400"
-                        placeholder="warm luxury hotel mood, wet concrete texture, soft daylight"></textarea>
-                </div>
-
-                <div class="options-stack">
-                    <div class="option-row">
-                        <span class="option-name">Resolution</span>
-                        <div class="pill-group">
-                            <label class="pill-option"><input type="radio" name="resolution" value="2k" checked><span>2K</span></label>
-                            <label class="pill-option"><input type="radio" name="resolution" value="4k"><span>4K</span></label>
-                        </div>
-                    </div>
-
-                    <div class="option-row">
-                        <span class="option-name">Variations</span>
-                        <div class="pill-group variation-scroll">
-                            <label class="pill-option"><input type="radio" name="variation" value="1" checked><span>1</span></label>
-                            <label class="pill-option"><input type="radio" name="variation" value="2"><span>2</span></label>
-                            <label class="pill-option"><input type="radio" name="variation" value="3"><span>3</span></label>
-                            <label class="pill-option"><input type="radio" name="variation" value="4"><span>4</span></label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div class="results-wrap" id="results-wrap" hidden>
                 <div class="results-header">
                     <div>
@@ -334,17 +299,64 @@
             </div>
         </div>
 
-        <!-- Floating Generate Dock -->
+        <!-- Floating Generate Dock — expandable with direction + options inline -->
         <div class="generate-dock" id="generate-dock">
-            <div class="dock-mode-tag" id="dock-mode-tag">05 · 구도 합성</div>
-            <div class="dock-status">
-                <span class="dock-dot" id="dock-dot"></span>
-                <span class="dock-text" id="dock-text">레퍼런스와 제품을 선택해주세요</span>
+            <!-- Compact bar (always visible) -->
+            <div class="dock-compact" id="dock-compact">
+                <button type="button" class="dock-expand-btn" id="dock-expand-btn" aria-label="옵션 펼치기">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
+                </button>
+
+                <div class="dock-mode-tag" id="dock-mode-tag">05 · 구도 합성</div>
+
+                <div class="dock-direction-input">
+                    <input type="text" id="dock-direction-input" maxlength="400"
+                        placeholder="추가 디렉션 — warm hotel mood, wet concrete, soft daylight..."
+                        autocomplete="off">
+                </div>
+
+                <div class="dock-meta">
+                    <span class="dock-dot" id="dock-dot"></span>
+                    <span class="dock-text" id="dock-text">레퍼런스와 제품을 선택해주세요</span>
+                </div>
+
+                <button class="dock-btn" id="generate-button" disabled>
+                    <span class="dock-btn-label">GENERATE</span>
+                    <span class="dock-btn-arrow">→</span>
+                </button>
             </div>
-            <button class="dock-btn" id="generate-button" disabled>
-                <span class="dock-btn-label">GENERATE</span>
-                <span class="dock-btn-arrow">→</span>
-            </button>
+
+            <!-- Expanded panel (Options) -->
+            <div class="dock-expanded" id="dock-expanded" hidden>
+                <div class="dock-options-grid">
+                    <div class="dock-option-block">
+                        <span class="dock-option-label">Resolution</span>
+                        <div class="pill-group">
+                            <label class="pill-option"><input type="radio" name="resolution" value="2k" checked><span>2K</span></label>
+                            <label class="pill-option"><input type="radio" name="resolution" value="4k"><span>4K</span></label>
+                        </div>
+                    </div>
+
+                    <div class="dock-option-block">
+                        <span class="dock-option-label">Variations</span>
+                        <div class="pill-group">
+                            <label class="pill-option"><input type="radio" name="variation" value="1" checked><span>1</span></label>
+                            <label class="pill-option"><input type="radio" name="variation" value="2"><span>2</span></label>
+                            <label class="pill-option"><input type="radio" name="variation" value="3"><span>3</span></label>
+                            <label class="pill-option"><input type="radio" name="variation" value="4"><span>4</span></label>
+                        </div>
+                    </div>
+
+                    <div class="dock-option-block dock-option-block-full">
+                        <span class="dock-option-label">Direction (상세)</span>
+                        <textarea id="additional-direction" class="dock-direction-textarea" maxlength="400"
+                            placeholder="원하는 무드·조명·재질을 한 줄에 — 모드별 마스터 프롬프트가 자동 적용됩니다."></textarea>
+                        <span class="dock-counter" id="direction-count">0 / 400</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -366,9 +378,114 @@
             </div>
 
             <div class="overview-body">
-                <object type="image/svg+xml" data="images/system_overview_dark.svg" class="overview-svg" aria-label="System architecture diagram">
-                    <img src="images/system_overview_dark.svg" alt="IIC AI Generator system architecture">
-                </object>
+                <!-- Tabs: Diagram | Examples -->
+                <div class="overview-tabs">
+                    <button type="button" class="overview-tab active" data-overview-tab="diagram">시스템 구조</button>
+                    <button type="button" class="overview-tab" data-overview-tab="examples">가이드 예시</button>
+                </div>
+
+                <div class="overview-tab-panel" data-overview-panel="diagram">
+                    <object type="image/svg+xml" data="images/system_overview_dark.svg" class="overview-svg" aria-label="System architecture diagram">
+                        <img src="images/system_overview_dark.svg" alt="IIC AI Generator system architecture">
+                    </object>
+                </div>
+
+                <div class="overview-tab-panel" data-overview-panel="examples" hidden>
+                    <p class="overview-examples-intro">캔버스에 어떻게 배치하면 어떤 결과가 나오는지 빠른 가이드.</p>
+                    <div class="example-grid">
+                        <div class="example-header">가이드 보드</div>
+                        <div class="example-header">누끼 / 에셋</div>
+                        <div class="example-header">배경 레퍼런스</div>
+                        <div class="example-header">최종본</div>
+
+                        <!-- Row 1: GWP composition example -->
+                        <div class="example-cell example-board">
+                            <div class="example-mini-canvas studio">
+                                <div class="mini-stack">
+                                    <div class="mini-thumb thumb-package"></div>
+                                    <div class="mini-thumb thumb-product"></div>
+                                    <div class="mini-thumb thumb-gwp"></div>
+                                </div>
+                                <div class="example-label">제품 + 패키지 + GWP</div>
+                            </div>
+                        </div>
+                        <div class="example-cell">
+                            <div class="example-mini-canvas plain">
+                                <div class="mini-thumb thumb-product big"></div>
+                                <div class="example-label">제품 단독</div>
+                            </div>
+                        </div>
+                        <div class="example-cell">
+                            <div class="example-mini-canvas ref-mood-warm">
+                                <div class="example-label">호텔 무드</div>
+                            </div>
+                        </div>
+                        <div class="example-cell">
+                            <div class="example-mini-canvas final-warm">
+                                <div class="example-tag-final">CCP-007</div>
+                                <div class="example-label">스튜디오 합성</div>
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Package + ribbon variation -->
+                        <div class="example-cell">
+                            <div class="example-mini-canvas studio">
+                                <div class="mini-stack">
+                                    <div class="mini-thumb thumb-package"></div>
+                                </div>
+                                <div class="example-label">패키지만</div>
+                            </div>
+                        </div>
+                        <div class="example-cell">
+                            <div class="example-mini-canvas plain">
+                                <div class="mini-thumb thumb-package big"></div>
+                                <div class="example-label">패키지 단독</div>
+                            </div>
+                        </div>
+                        <div class="example-cell">
+                            <div class="example-mini-canvas ref-mood-tile">
+                                <div class="example-label">타일/주방</div>
+                            </div>
+                        </div>
+                        <div class="example-cell">
+                            <div class="example-mini-canvas final-cool">
+                                <div class="example-tag-final">M01</div>
+                                <div class="example-label">배경 교체</div>
+                            </div>
+                        </div>
+
+                        <!-- Row 3: Solid color background -->
+                        <div class="example-cell">
+                            <div class="example-mini-canvas solid-soft">
+                                <div class="mini-stack">
+                                    <div class="mini-thumb thumb-product"></div>
+                                </div>
+                                <div class="example-label">제품 + 단일색상</div>
+                            </div>
+                        </div>
+                        <div class="example-cell">
+                            <div class="example-mini-canvas plain">
+                                <div class="mini-thumb thumb-product big"></div>
+                                <div class="example-label">제품 누끼</div>
+                            </div>
+                        </div>
+                        <div class="example-cell example-na">
+                            <span>—</span>
+                            <div class="example-label">레퍼런스 불필요</div>
+                        </div>
+                        <div class="example-cell">
+                            <div class="example-mini-canvas final-soft">
+                                <div class="example-tag-final">M02</div>
+                                <div class="example-label">배경 컬러</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="example-hint">
+                        <span class="example-hint-icon">💡</span>
+                        <span>지금 바로 캔버스 보드에서 직접 시도해보세요. 위의 패턴을 그대로 따라 배치하면 비슷한 결과를 얻을 수 있습니다.</span>
+                    </div>
+                </div>
             </div>
 
             <div class="overview-footer">

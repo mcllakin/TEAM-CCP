@@ -292,14 +292,16 @@ const state = {
             'product-official': [],
             'product-draft': [],
             'package': [],
-            'gwp': []
+            'gwp': [],
+            'reference-thumbnails': []
         }
     },
     canvas: {
-        background: 'studio',     // 'studio' | 'solid-white'
-        aspect: '1:1',            // '1:1' | '4:5' | '16:9' | '21:9'
-        floorPct: 40,             // floor height percentage (studio mode only)
-        items: [],                // {id, assetId, board, label, src, xPct, yPct, wPct, hPct, rotation, z}
+        background: 'studio',     // 'studio' | 'solid'
+        solidColor: '#ffffff',    // RGB hex for solid mode
+        aspect: '1:1',
+        floorPct: 40,
+        items: [],
         selectedId: null,
         nextZ: 1,
         nextItemId: 1
@@ -364,6 +366,17 @@ function initOverviewModal() {
     });
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && modal.classList.contains('active')) closeOverviewModal();
+    });
+
+    // Tab switching
+    document.querySelectorAll('.overview-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const target = tab.dataset.overviewTab;
+            document.querySelectorAll('.overview-tab').forEach(t =>
+                t.classList.toggle('active', t === tab));
+            document.querySelectorAll('.overview-tab-panel').forEach(p =>
+                p.hidden = p.dataset.overviewPanel !== target);
+        });
     });
 }
 function openOverviewModal() {
@@ -573,6 +586,8 @@ function renderBrowser(boardId) {
             emptyP.textContent = '패키지 자산이 아직 없습니다.';
         } else if (boardId === 'gwp') {
             emptyP.textContent = 'GWP 자산이 아직 없습니다.';
+        } else if (boardId === 'reference-thumbnails') {
+            emptyP.textContent = '기존 캠페인 썸네일이 아직 없습니다.';
         } else {
             emptyP.textContent = '이 카테고리는 비어있습니다.';
         }
@@ -599,6 +614,11 @@ function renderBrowser(boardId) {
             tier.className = `browser-item-tier ${boardId === 'product-official' ? 'official' : 'draft'}`;
             tier.textContent = boardId === 'product-official' ? 'OFFICIAL' : 'DRAFT';
             el.appendChild(tier);
+        } else if (boardId === 'reference-thumbnails') {
+            const tier = document.createElement('div');
+            tier.className = 'browser-item-tier ref';
+            tier.textContent = 'REF';
+            el.appendChild(tier);
         }
 
         const label = document.createElement('div');
@@ -618,17 +638,39 @@ function renderBrowser(boardId) {
 
 // ========== CANVAS ==========
 function initCanvas() {
+    const stage = document.getElementById('canvas-stage');
+    const bgOptions = document.getElementById('bg-options');
+    const colorInput = document.getElementById('bg-color-input');
+
     // Background switcher
     document.querySelectorAll('.bg-option').forEach(btn => {
         btn.addEventListener('click', () => {
             const bg = btn.dataset.bg;
             state.canvas.background = bg;
             document.querySelectorAll('.bg-option').forEach(b => b.classList.toggle('active', b === btn));
-            const stage = document.getElementById('canvas-stage');
             if (stage) stage.setAttribute('data-bg', bg);
+            if (bgOptions) bgOptions.classList.toggle('solid-mode', bg === 'solid');
+            // Apply current solid color when entering solid mode
+            if (bg === 'solid' && stage) {
+                stage.style.setProperty('--solid-bg', state.canvas.solidColor);
+            }
             updateCanvasStatus();
         });
     });
+
+    // Color picker
+    if (colorInput) {
+        colorInput.addEventListener('input', (e) => {
+            const hex = e.target.value;
+            state.canvas.solidColor = hex;
+            const preview = document.getElementById('bg-solid-preview');
+            if (preview) preview.style.setProperty('--solid-bg', hex);
+            if (stage && state.canvas.background === 'solid') {
+                stage.style.setProperty('--solid-bg', hex);
+            }
+            updateCanvasStatus();
+        });
+    }
 
     // Clear button
     document.getElementById('canvas-clear')?.addEventListener('click', () => {
@@ -663,30 +705,48 @@ function initAspectDropdown() {
     const current = document.getElementById('aspect-current');
     if (!trigger || !menu || !dropdown || !current) return;
 
+    function closeMenu() {
+        menu.hidden = true;
+        dropdown.classList.remove('open');
+    }
+    function openMenu() {
+        menu.hidden = false;
+        dropdown.classList.add('open');
+    }
+    function toggleMenu() {
+        if (menu.hidden) openMenu();
+        else closeMenu();
+    }
+
     trigger.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
-        const isOpen = !menu.hidden;
-        menu.hidden = isOpen;
-        dropdown.classList.toggle('open', !isOpen);
+        toggleMenu();
     });
 
+    // Outside click closes — uses capture phase so it always runs,
+    // and explicitly ignores clicks inside the dropdown itself
     document.addEventListener('click', (e) => {
-        if (!dropdown.contains(e.target)) {
-            menu.hidden = true;
-            dropdown.classList.remove('open');
-        }
+        if (menu.hidden) return;
+        if (dropdown.contains(e.target)) return;
+        closeMenu();
+    }, true);
+
+    // Escape closes
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !menu.hidden) closeMenu();
     });
 
     document.querySelectorAll('.aspect-item').forEach(item => {
-        item.addEventListener('click', () => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
             const aspect = item.dataset.aspect;
             state.canvas.aspect = aspect;
             current.textContent = aspect;
             document.querySelectorAll('.aspect-item').forEach(i => i.classList.toggle('active', i === item));
             const stage = document.getElementById('canvas-stage');
             if (stage) stage.setAttribute('data-aspect', aspect);
-            menu.hidden = true;
-            dropdown.classList.remove('open');
+            closeMenu();
             updateCanvasStatus();
         });
     });
@@ -939,7 +999,10 @@ function updateCanvasStatus() {
     const info = document.getElementById('canvas-info');
     if (count) count.textContent = `${state.canvas.items.length}개 배치됨`;
     if (info) {
-        const bgName = state.canvas.background === 'studio' ? '스튜디오' : '단일색상';
+        let bgName;
+        if (state.canvas.background === 'studio') bgName = '스튜디오';
+        else if (state.canvas.background === 'solid') bgName = `단일 ${state.canvas.solidColor.toUpperCase()}`;
+        else bgName = state.canvas.background;
         info.textContent = `${state.canvas.aspect} · ${bgName}`;
     }
 }
@@ -981,6 +1044,9 @@ async function rasterizeCanvas() {
         floorGrad.addColorStop(1, '#b0b0b0');
         ctx.fillStyle = floorGrad;
         ctx.fillRect(0, wallH, W, floorH);
+    } else if (state.canvas.background === 'solid') {
+        ctx.fillStyle = state.canvas.solidColor;
+        ctx.fillRect(0, 0, W, H);
     } else {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, W, H);
@@ -1135,13 +1201,42 @@ function initOptions() {
 }
 
 function initDirectionTextarea() {
-    const t = document.getElementById('additional-direction');
-    const c = document.getElementById('direction-count');
-    if (!t) return;
-    t.addEventListener('input', (e) => {
-        state.options.additionalDirection = e.target.value.trim();
-        if (c) c.textContent = `${e.target.value.length} / 400`;
-    });
+    const compactInput = document.getElementById('dock-direction-input');
+    const fullTextarea = document.getElementById('additional-direction');
+    const counter = document.getElementById('direction-count');
+
+    function syncFromCompact() {
+        if (!compactInput) return;
+        const v = compactInput.value;
+        state.options.additionalDirection = v.trim();
+        if (fullTextarea && fullTextarea.value !== v) fullTextarea.value = v;
+        if (counter) counter.textContent = `${v.length} / 400`;
+    }
+    function syncFromFull() {
+        if (!fullTextarea) return;
+        const v = fullTextarea.value;
+        state.options.additionalDirection = v.trim();
+        if (compactInput && compactInput.value !== v) compactInput.value = v;
+        if (counter) counter.textContent = `${v.length} / 400`;
+    }
+
+    if (compactInput) compactInput.addEventListener('input', syncFromCompact);
+    if (fullTextarea) fullTextarea.addEventListener('input', syncFromFull);
+
+    // Expand/collapse dock
+    const expandBtn = document.getElementById('dock-expand-btn');
+    const expanded = document.getElementById('dock-expanded');
+    const dock = document.getElementById('generate-dock');
+    if (expandBtn && expanded && dock) {
+        expandBtn.addEventListener('click', () => {
+            const isHidden = expanded.hidden;
+            expanded.hidden = !isHidden;
+            dock.classList.toggle('expanded', isHidden);
+            if (isHidden && fullTextarea) {
+                setTimeout(() => fullTextarea.focus(), 100);
+            }
+        });
+    }
 }
 
 function initColorPicker() {
