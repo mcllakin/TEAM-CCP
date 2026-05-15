@@ -2,41 +2,284 @@
   "boards": {
     "product-official": [
       {
-        "id": "shell30ml-evening-glow",
-        "label": "SHELL 30ml — EVENING GLOW",
-        "thumbnail": "/images/boards/shell30ml-evening-glow.png",
-        "dataUrl": "/images/boards/shell30ml-evening-glow.png",
-        "transparent": true,
-        "tags": ["perfume hand", "shell", "30ml", "evening-glow"]
+        "id": "blue-hinoki-30ml-shell-shadow",
+        "label": "Blue Hinoki 30ML SHELL",
+        "thumbnail": "/images/boards/product/blue-hinoki-30ml-shell-shadow.png",
+        "dataUrl": "/images/boards/product/blue-hinoki-30ml-shell-shadow.png",
+        "transparent": true
+      },
+      {
+        "id": "blue-hinoki-showery-body-wash-shadow",
+        "label": "Blue Hinoki Showery Body Wash",
+        "thumbnail": "/images/boards/product/blue-hinoki-showery-body-wash-shadow.png",
+        "dataUrl": "/images/boards/product/blue-hinoki-showery-body-wash-shadow.png",
+        "transparent": true
+      },
+      {
+        "id": "bottari-50ml",
+        "label": "Bottari 50ml",
+        "thumbnail": "/images/boards/product/bottari-50ml.png",
+        "dataUrl": "/images/boards/product/bottari-50ml.png",
+        "transparent": true
+      },
+      {
+        "id": "bottari-50ml-side",
+        "label": "Bottari 50ml",
+        "thumbnail": "/images/boards/product/bottari-50ml-side.png",
+        "dataUrl": "/images/boards/product/bottari-50ml-side.png",
+        "transparent": true
+      },
+      {
+        "id": "egg-perfume-bottle-close-eveningglow",
+        "label": "Egg Perfume Bottle Close EveningGlow",
+        "thumbnail": "/images/boards/product/egg-perfume-bottle-close-eveningglow.png",
+        "dataUrl": "/images/boards/product/egg-perfume-bottle-close-eveningglow.png",
+        "transparent": true
+      },
+      {
+        "id": "eveningglow-balm",
+        "label": "EveningGlow balm",
+        "thumbnail": "/images/boards/product/eveningglow-balm.png",
+        "dataUrl": "/images/boards/product/eveningglow-balm.png",
+        "transparent": true
+      },
+      {
+        "id": "perfume-oil-eveningglow-shadow-edit2",
+        "label": "Perfume Oil EveningGlow",
+        "thumbnail": "/images/boards/product/perfume-oil-eveningglow-shadow-edit2.png",
+        "dataUrl": "/images/boards/product/perfume-oil-eveningglow-shadow-edit2.png",
+        "transparent": true
+      },
+      {
+        "id": "perfume-sunshine-11ml-purfume-side2-nuki-shadow",
+        "label": "Perfume Sunshine 11ml Purfume Nuki",
+        "thumbnail": "/images/boards/product/perfume-sunshine-11ml-purfume-side2-nuki-shadow.png",
+        "dataUrl": "/images/boards/product/perfume-sunshine-11ml-purfume-side2-nuki-shadow.png",
+        "transparent": true
+      },
+      {
+        "id": "perfumed-hand-wash-summertails-front-shadow",
+        "label": "Perfumed-Hand-Wash-SummerTails-Front-",
+        "thumbnail": "/images/boards/product/perfumed-hand-wash-summertails-front-shadow.png",
+        "dataUrl": "/images/boards/product/perfumed-hand-wash-summertails-front-shadow.png",
+        "transparent": true
+      },
+      {
+        "id": "shell-sunshine-15ml-shadow",
+        "label": "SHELL SUNSHINE 15ML",
+        "thumbnail": "/images/boards/product/shell-sunshine-15ml-shadow.png",
+        "dataUrl": "/images/boards/product/shell-sunshine-15ml-shadow.png",
+        "transparent": true
+      },
+      {
+        "id": "shell-sunshine-30ml-shadow",
+        "label": "SHELL SUNSHINE 30ML",
+        "thumbnail": "/images/boards/product/shell-sunshine-30ml-shadow.png",
+        "dataUrl": "/images/boards/product/shell-sunshine-30ml-shadow.png",
+        "transparent": true
+      },
+      {
+        "id": "chamo-balm",
+        "label": "chamo BALM",
+        "thumbnail": "/images/boards/product/chamo-balm.png",
+        "dataUrl": "/images/boards/product/chamo-balm.png",
+        "transparent": true
+      },
+      {
+        "id": "hair-oil-sumtails-50ml",
+        "label": "hair-oil-sumtails-50ml",
+        "thumbnail": "/images/boards/product/hair-oil-sumtails-50ml.png",
+        "dataUrl": "/images/boards/product/hair-oil-sumtails-50ml.png",
+        "transparent": true
+      },
+      {
+        "id": "hair-perfume-sumtails-80ml",
+        "label": "hair-perfume-sumtails-80ml",
+        "thumbnail": "/images/boards/product/hair-perfume-sumtails-80ml.png",
+        "dataUrl": "/images/boards/product/hair-perfume-sumtails-80ml.png",
+        "transparent": true
+      },
+      {
+        "id": "perfume-sumtails-11ml",
+        "label": "perfume-sumtails-11ml",
+        "thumbnail": "/images/boards/product/perfume-sumtails-11ml.png",
+        "dataUrl": "/images/boards/product/perfume-sumtails-11ml.png",
+        "transparent": true
+      },
+      {
+        "id": "perfume-sumtails-2ml",
+        "label": "perfume-sumtails-2ml",
+        "thumbnail": "/images/boards/product/perfume-sumtails-2ml.png",
+        "dataUrl": "/images/boards/product/perfume-sumtails-2ml.png",
+        "transparent": true
+      },
+      {
+        "id": "perfume-sumtails-50ml-side",
+        "label": "perfume-sumtails-50ml-",
+        "thumbnail": "/images/boards/product/perfume-sumtails-50ml-side.png",
+        "dataUrl": "/images/boards/product/perfume-sumtails-50ml-side.png",
+        "transparent": true
+      },
+      {
+        "id": "perfume-sumtails-50ml",
+        "label": "perfume-sumtails-50ml",
+        "thumbnail": "/images/boards/product/perfume-sumtails-50ml.png",
+        "dataUrl": "/images/boards/product/perfume-sumtails-50ml.png",
+        "transparent": true
+      },
+      {
+        "id": "comb-set",
+        "label": "임시 comb set",
+        "thumbnail": "/images/boards/product/comb-set.png",
+        "dataUrl": "/images/boards/product/comb-set.png",
+        "transparent": true
+      },
+      {
+        "id": "ohand",
+        "label": "임시 ohand",
+        "thumbnail": "/images/boards/product/ohand.png",
+        "dataUrl": "/images/boards/product/ohand.png",
+        "transparent": true
       }
     ],
     "product-draft": [],
     "package": [
       {
-        "id": "heart-blue-ribbon",
-        "label": "Heart box · Blue ribbon",
-        "thumbnail": "/images/boards/heart-blue-ribbon.jpg",
-        "dataUrl": "/images/boards/heart-blue-ribbon.jpg",
-        "transparent": false,
-        "tags": ["package", "heart-box", "blue-ribbon"]
+        "id": "balm-purfume-box-side-2",
+        "label": "Balm Purfume Box 2",
+        "thumbnail": "/images/boards/package/balm-purfume-box-side-2.png",
+        "dataUrl": "/images/boards/package/balm-purfume-box-side-2.png",
+        "transparent": true
+      },
+      {
+        "id": "eveningglow-50ml-purfume-box-ribbon-shadow",
+        "label": "EveningGlow 50ml Purfume Box Ribbon",
+        "thumbnail": "/images/boards/package/eveningglow-50ml-purfume-box-ribbon-shadow.png",
+        "dataUrl": "/images/boards/package/eveningglow-50ml-purfume-box-ribbon-shadow.png",
+        "transparent": true
+      },
+      {
+        "id": "perfumebalmminicase-front",
+        "label": "PerfumeBalmMiniCase Front",
+        "thumbnail": "/images/boards/package/perfumebalmminicase-front.png",
+        "dataUrl": "/images/boards/package/perfumebalmminicase-front.png",
+        "transparent": true
+      },
+      {
+        "id": "ss-2ml--front",
+        "label": "SS 2ml 지카드 Front",
+        "thumbnail": "/images/boards/package/ss-2ml--front.png",
+        "dataUrl": "/images/boards/package/ss-2ml--front.png",
+        "transparent": true
+      },
+      {
+        "id": "ss-2ml--open",
+        "label": "SS 2ml 지카드 Open",
+        "thumbnail": "/images/boards/package/ss-2ml--open.png",
+        "dataUrl": "/images/boards/package/ss-2ml--open.png",
+        "transparent": true
+      },
+      {
+        "id": "ss-duo-set-chamo-bluehinokki-front",
+        "label": "SS Duo Set Chamo BlueHinokki Front",
+        "thumbnail": "/images/boards/package/ss-duo-set-chamo-bluehinokki-front.png",
+        "dataUrl": "/images/boards/package/ss-duo-set-chamo-bluehinokki-front.png",
+        "transparent": true
+      },
+      {
+        "id": "ss-duo-set-chamo-bluehinokki-side",
+        "label": "SS Duo Set Chamo BlueHinokki",
+        "thumbnail": "/images/boards/package/ss-duo-set-chamo-bluehinokki-side.png",
+        "dataUrl": "/images/boards/package/ss-duo-set-chamo-bluehinokki-side.png",
+        "transparent": true
+      },
+      {
+        "id": "ss-heart-pkg",
+        "label": "SS Heart PKG",
+        "thumbnail": "/images/boards/package/ss-heart-pkg.png",
+        "dataUrl": "/images/boards/package/ss-heart-pkg.png",
+        "transparent": true
+      },
+      {
+        "id": "heart-chrome",
+        "label": "heart chrome",
+        "thumbnail": "/images/boards/package/heart-chrome.png",
+        "dataUrl": "/images/boards/package/heart-chrome.png",
+        "transparent": true
       }
     ],
     "gwp": [
       {
-        "id": "bluehinoki-2ml",
-        "label": "BLUE HINOKI 2ml",
-        "thumbnail": "/images/boards/bluehinoki-2ml.png",
-        "dataUrl": "/images/boards/bluehinoki-2ml.png",
-        "transparent": true,
-        "tags": ["gwp", "perfume", "2ml", "blue-hinoki"]
+        "id": "2ml--shadow",
+        "label": "2ml 지카드",
+        "thumbnail": "/images/boards/gwp/2ml--shadow.png",
+        "dataUrl": "/images/boards/gwp/2ml--shadow.png",
+        "transparent": true
       },
       {
-        "id": "sunshine-keyring",
-        "label": "SUNSHINE dog keyring",
-        "thumbnail": "/images/boards/sunshine-keyring.png",
-        "dataUrl": "/images/boards/sunshine-keyring.png",
-        "transparent": true,
-        "tags": ["gwp", "keyring", "dog", "sunshine"]
+        "id": "dogkeyring-sunshine-shadow",
+        "label": "DOGKEYRING SUNSHINE",
+        "thumbnail": "/images/boards/gwp/dogkeyring-sunshine-shadow.png",
+        "dataUrl": "/images/boards/gwp/dogkeyring-sunshine-shadow.png",
+        "transparent": true
+      },
+      {
+        "id": "dogkeyring-sunshine-tl-shadow",
+        "label": "DOGKEYRING SUNSHINE TL",
+        "thumbnail": "/images/boards/gwp/dogkeyring-sunshine-tl-shadow.png",
+        "dataUrl": "/images/boards/gwp/dogkeyring-sunshine-tl-shadow.png",
+        "transparent": true
+      },
+      {
+        "id": "2ml-bluehinoki-2ml-purfume-shadow",
+        "label": "2ml BlueHinoki 2ml Purfume",
+        "thumbnail": "/images/boards/gwp/2ml-bluehinoki-2ml-purfume-shadow.png",
+        "dataUrl": "/images/boards/gwp/2ml-bluehinoki-2ml-purfume-shadow.png",
+        "transparent": true
+      }
+    ],
+    "reference-thumbnails": [
+      {
+        "id": "eg-shell-30ml",
+        "label": "EG Shell 30ml",
+        "thumbnail": "/images/boards/thumbnails/eg-shell-30ml.png",
+        "dataUrl": "/images/boards/thumbnails/eg-shell-30ml.png",
+        "transparent": false
+      },
+      {
+        "id": "eg-shell-30ml-2ml",
+        "label": "EG Shell 30ml 2ml",
+        "thumbnail": "/images/boards/thumbnails/eg-shell-30ml-2ml.png",
+        "dataUrl": "/images/boards/thumbnails/eg-shell-30ml-2ml.png",
+        "transparent": false
+      },
+      {
+        "id": "eveningglow-vynil-case-2",
+        "label": "EveningGlow vynil case 2",
+        "thumbnail": "/images/boards/thumbnails/eveningglow-vynil-case-2.png",
+        "dataUrl": "/images/boards/thumbnails/eveningglow-vynil-case-2.png",
+        "transparent": false
+      },
+      {
+        "id": "handemulsion-summertails-white",
+        "label": "HandEmulsion summertails wHITE",
+        "thumbnail": "/images/boards/thumbnails/handemulsion-summertails-white.png",
+        "dataUrl": "/images/boards/thumbnails/handemulsion-summertails-white.png",
+        "transparent": false
+      },
+      {
+        "id": "body-vinyl-edit-2",
+        "label": "body vinyl 2",
+        "thumbnail": "/images/boards/thumbnails/body-vinyl-edit-2.png",
+        "dataUrl": "/images/boards/thumbnails/body-vinyl-edit-2.png",
+        "transparent": false
+      },
+      {
+        "id": "shell-heart-kakao",
+        "label": "shell heart Kakao",
+        "thumbnail": "/images/boards/thumbnails/shell-heart-kakao.png",
+        "dataUrl": "/images/boards/thumbnails/shell-heart-kakao.png",
+        "transparent": false
       }
     ]
   }
