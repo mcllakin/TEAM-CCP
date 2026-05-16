@@ -1,5 +1,5 @@
 // ============================================================
-// IIC AI Generator — CCP Team
+// IIC AI Generator Team
 // 6 modes + Server Boards + Auto-foldering
 // ============================================================
 
@@ -8,7 +8,7 @@ const MAX_IMAGE_EDGE = 1600;
 const JPEG_QUALITY = 0.9;
 
 // ============================================================
-// MODE DEFINITIONS — prompts adapted from CCP AI PROMPT Notion
+// MODE DEFINITIONS — prompts adapted from IIC AI PROMPT Notion
 // ============================================================
 const MODES = {
     'bg-replace': {
@@ -342,11 +342,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateDock();
     updateAutoNamePreview();
 
+    // Hide canvas hint labels if user has used canvas before
+    try {
+        if (localStorage.getItem('iic_canvas_used')) {
+            const hint = document.getElementById('canvas-hint-labels');
+            if (hint) hint.classList.add('faded');
+        }
+    } catch (_) {}
+
     // First-visit overview modal
     try {
         if (!localStorage.getItem('iic_overview_seen')) {
             setTimeout(() => {
-                openOverviewModal();
+                openOverviewModal('diagram');
                 localStorage.setItem('iic_overview_seen', '1');
             }, 600);
         }
@@ -357,9 +365,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initOverviewModal() {
     const modal = document.getElementById('overview-modal');
     if (!modal) return;
-    document.getElementById('overview-btn')?.addEventListener('click', openOverviewModal);
+    document.getElementById('overview-btn')?.addEventListener('click', () => openOverviewModal('diagram'));
     document.querySelectorAll('[data-open-overview]').forEach(el => {
-        el.addEventListener('click', openOverviewModal);
+        el.addEventListener('click', () => {
+            const target = el.dataset.overviewTarget || 'diagram';
+            openOverviewModal(target);
+        });
     });
     document.querySelectorAll('[data-close-overview]').forEach(el => {
         el.addEventListener('click', closeOverviewModal);
@@ -368,23 +379,28 @@ function initOverviewModal() {
         if (e.key === 'Escape' && modal.classList.contains('active')) closeOverviewModal();
     });
 
-    // Tab switching
+    // Tab switching inside modal
     document.querySelectorAll('.overview-tab').forEach(tab => {
         tab.addEventListener('click', () => {
-            const target = tab.dataset.overviewTab;
-            document.querySelectorAll('.overview-tab').forEach(t =>
-                t.classList.toggle('active', t === tab));
-            document.querySelectorAll('.overview-tab-panel').forEach(p =>
-                p.hidden = p.dataset.overviewPanel !== target);
+            switchOverviewTab(tab.dataset.overviewTab);
         });
     });
 }
-function openOverviewModal() {
+
+function switchOverviewTab(target) {
+    document.querySelectorAll('.overview-tab').forEach(t =>
+        t.classList.toggle('active', t.dataset.overviewTab === target));
+    document.querySelectorAll('.overview-tab-panel').forEach(p =>
+        p.hidden = p.dataset.overviewPanel !== target);
+}
+
+function openOverviewModal(tab) {
     const modal = document.getElementById('overview-modal');
     if (!modal) return;
     modal.classList.add('active');
     modal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+    if (tab) switchOverviewTab(tab);
 }
 function closeOverviewModal() {
     const modal = document.getElementById('overview-modal');
@@ -718,27 +734,29 @@ function initAspectDropdown() {
         else closeMenu();
     }
 
-    trigger.addEventListener('click', (e) => {
+    // Use mousedown — runs before click, lets us stop propagation
+    // to the outside-click handler reliably
+    trigger.addEventListener('mousedown', (e) => {
         e.preventDefault();
         e.stopPropagation();
         toggleMenu();
     });
 
-    // Outside click closes — uses capture phase so it always runs,
-    // and explicitly ignores clicks inside the dropdown itself
-    document.addEventListener('click', (e) => {
+    // Outside click — uses pointerdown for instant response,
+    // capture phase to catch before any inner stopPropagation
+    document.addEventListener('pointerdown', (e) => {
         if (menu.hidden) return;
         if (dropdown.contains(e.target)) return;
         closeMenu();
     }, true);
 
-    // Escape closes
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && !menu.hidden) closeMenu();
     });
 
     document.querySelectorAll('.aspect-item').forEach(item => {
-        item.addEventListener('click', (e) => {
+        item.addEventListener('mousedown', (e) => {
+            e.preventDefault();
             e.stopPropagation();
             const aspect = item.dataset.aspect;
             state.canvas.aspect = aspect;
@@ -797,7 +815,9 @@ function addCanvasItem(asset) {
         wPct: 30,
         hPct: 30,
         rotation: 0,
-        z: state.canvas.nextZ++
+        z: state.canvas.nextZ++,
+        // Alpha bbox — computed async after image loads
+        bbox: null
     };
     state.canvas.items.push(newItem);
     state.canvas.selectedId = newItem.id;
@@ -806,6 +826,80 @@ function addCanvasItem(asset) {
     updateAutoNamePreview();
     updateDock();
     toast(`${asset.label} 추가됨`);
+
+    // Compute alpha bbox in background — when ready, re-render to fit selection box
+    computeAlphaBBox(newItem.src).then(bbox => {
+        if (bbox) {
+            newItem.bbox = bbox;
+            renderCanvas();
+        }
+    }).catch(() => {});
+
+    // Auto-hide canvas hint after first item added
+    try {
+        localStorage.setItem('iic_canvas_used', '1');
+        const hint = document.getElementById('canvas-hint-labels');
+        if (hint) hint.classList.add('faded');
+    } catch (_) {}
+}
+
+/**
+ * Compute the tight bounding box of non-transparent pixels in an image.
+ * Returns {left, top, right, bottom} as ratios (0..1) relative to image dims,
+ * or null on error / for opaque images (where bbox = full image).
+ */
+function computeAlphaBBox(src) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onerror = () => resolve(null);
+        img.onload = () => {
+            try {
+                const W = img.naturalWidth;
+                const H = img.naturalHeight;
+                if (!W || !H) { resolve(null); return; }
+
+                const cnv = document.createElement('canvas');
+                cnv.width = W;
+                cnv.height = H;
+                const ctx = cnv.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                const data = ctx.getImageData(0, 0, W, H).data;
+
+                let minX = W, minY = H, maxX = -1, maxY = -1;
+                let hasAlpha = false;
+
+                for (let y = 0; y < H; y++) {
+                    for (let x = 0; x < W; x++) {
+                        const a = data[(y * W + x) * 4 + 3];
+                        if (a > 10) {
+                            if (x < minX) minX = x;
+                            if (x > maxX) maxX = x;
+                            if (y < minY) minY = y;
+                            if (y > maxY) maxY = y;
+                        }
+                        if (a < 250) hasAlpha = true;
+                    }
+                }
+
+                // No alpha at all (opaque image) — selection box = full image
+                if (!hasAlpha || maxX < 0) { resolve(null); return; }
+
+                // Pad slightly (2% of dimensions)
+                const padX = W * 0.015;
+                const padY = H * 0.015;
+                resolve({
+                    left:   Math.max(0, (minX - padX) / W),
+                    top:    Math.max(0, (minY - padY) / H),
+                    right:  Math.min(1, (maxX + padX) / W),
+                    bottom: Math.min(1, (maxY + padY) / H)
+                });
+            } catch (e) {
+                resolve(null);
+            }
+        };
+        img.src = src;
+    });
 }
 
 function renderCanvas() {
@@ -835,17 +929,31 @@ function renderCanvas() {
         img.draggable = false;
         el.appendChild(img);
 
+        // Selection overlay — sized to alpha bbox if available, else full item
+        const overlay = document.createElement('div');
+        overlay.className = 'canvas-item-overlay';
+        if (item.bbox) {
+            const b = item.bbox;
+            overlay.style.left = `${b.left * 100}%`;
+            overlay.style.top = `${b.top * 100}%`;
+            overlay.style.right = `${(1 - b.right) * 100}%`;
+            overlay.style.bottom = `${(1 - b.bottom) * 100}%`;
+        } else {
+            overlay.style.inset = '0';
+        }
+        el.appendChild(overlay);
+
         ['nw', 'ne', 'sw', 'se'].forEach(corner => {
             const h = document.createElement('div');
             h.className = `canvas-item-handle h-${corner}`;
             h.dataset.corner = corner;
-            el.appendChild(h);
+            overlay.appendChild(h);
         });
 
         const rot = document.createElement('div');
         rot.className = 'canvas-item-rotate';
         rot.title = '회전 (Shift 누르면 15도 스냅)';
-        el.appendChild(rot);
+        overlay.appendChild(rot);
 
         const del = document.createElement('button');
         del.type = 'button';
@@ -856,7 +964,7 @@ function renderCanvas() {
             e.stopPropagation();
             removeCanvasItem(item.id);
         });
-        el.appendChild(del);
+        overlay.appendChild(del);
 
         attachItemInteractions(el, item);
         container.appendChild(el);

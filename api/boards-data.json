@@ -210,6 +210,13 @@
     ],
     "gwp": [
       {
+        "id": "2ml-bluehinoki-2ml-purfume-shadow",
+        "label": "2ml BlueHinoki 2ml Purfume",
+        "thumbnail": "/images/boards/gwp/2ml-bluehinoki-2ml-purfume-shadow.png",
+        "dataUrl": "/images/boards/gwp/2ml-bluehinoki-2ml-purfume-shadow.png",
+        "transparent": true
+      },
+      {
         "id": "2ml--shadow",
         "label": "2ml 지카드",
         "thumbnail": "/images/boards/gwp/2ml--shadow.png",
@@ -228,13 +235,6 @@
         "label": "DOGKEYRING SUNSHINE TL",
         "thumbnail": "/images/boards/gwp/dogkeyring-sunshine-tl-shadow.png",
         "dataUrl": "/images/boards/gwp/dogkeyring-sunshine-tl-shadow.png",
-        "transparent": true
-      },
-      {
-        "id": "2ml-bluehinoki-2ml-purfume-shadow",
-        "label": "2ml BlueHinoki 2ml Purfume",
-        "thumbnail": "/images/boards/gwp/2ml-bluehinoki-2ml-purfume-shadow.png",
-        "dataUrl": "/images/boards/gwp/2ml-bluehinoki-2ml-purfume-shadow.png",
         "transparent": true
       }
     ],
