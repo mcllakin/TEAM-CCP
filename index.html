@@ -28,9 +28,11 @@
                 <span>How it works</span>
             </button>
             <span class="nav-divider"></span>
-            <span class="nav-number active" data-section="0">00</span>
-            <span class="nav-number" data-section="1">01</span>
-            <span class="nav-number" data-section="2">02</span>
+            <span class="nav-numbers-group">
+                <span class="nav-number active" data-section="0">00</span>
+                <span class="nav-number" data-section="1">01</span>
+                <span class="nav-number" data-section="2">02</span>
+            </span>
         </div>
     </nav>
 
@@ -402,145 +404,22 @@
                 </div>
 
                 <div class="overview-tab-panel" data-overview-panel="examples" hidden>
-                    <p class="overview-examples-intro">실제 자산을 어떻게 배치하면 어떤 결과가 나오는지. 각 행을 그대로 따라 캔버스에 배치하면 비슷한 결과를 얻을 수 있습니다.</p>
-                    <div class="example-grid">
-                        <div class="example-header">가이드 보드</div>
-                        <div class="example-header">누끼 / 에셋</div>
-                        <div class="example-header">배경 레퍼런스</div>
-                        <div class="example-header">최종본</div>
+                    <p class="overview-examples-intro">실제로 만든 무드컷 예시 표. 가이드 보드에 어떤 자산을 어떻게 배치했고, 어떤 배경 레퍼런스 한 장으로 어떤 최종본이 나왔는지 한 번에 확인하실 수 있습니다.</p>
 
-                        <!-- Row 1: EG Shell 30ml + 2ml + GWP -->
-                        <div class="example-cell">
-                            <div class="example-mini-canvas studio">
-                                <img class="example-asset asset-pos-1" src="images/boards/package/eveningglow-50ml-purfume-box-ribbon-shadow.png" alt="" loading="lazy">
-                                <img class="example-asset asset-pos-2" src="images/boards/product/eveningglow-balm.png" alt="" loading="lazy">
-                                <img class="example-asset asset-pos-3 asset-small" src="images/boards/gwp/dogkeyring-sunshine-shadow.png" alt="" loading="lazy">
-                            </div>
-                            <div class="example-label-out">제품 + 패키지 + GWP</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas plain">
-                                <img class="example-asset asset-center" src="images/boards/product/eveningglow-balm.png" alt="" loading="lazy">
-                            </div>
-                            <div class="example-label-out">EG Balm 누끼</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas ref-warm"></div>
-                            <div class="example-label-out">따뜻한 호텔 무드</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas">
-                                <img class="example-asset asset-fill" src="images/boards/thumbnails/eg-shell-30ml.png" alt="" loading="lazy">
-                                <div class="example-tag-final">M05</div>
-                            </div>
-                            <div class="example-label-out">스튜디오 합성</div>
-                        </div>
-
-                        <!-- Row 2: Heart package solo -->
-                        <div class="example-cell">
-                            <div class="example-mini-canvas studio">
-                                <img class="example-asset asset-center" src="images/boards/package/heart-chrome.png" alt="" loading="lazy">
-                            </div>
-                            <div class="example-label-out">패키지 단독</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas plain">
-                                <img class="example-asset asset-center" src="images/boards/package/heart-chrome.png" alt="" loading="lazy">
-                            </div>
-                            <div class="example-label-out">Heart Chrome</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas ref-cool"></div>
-                            <div class="example-label-out">파스텔 욕실</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas">
-                                <img class="example-asset asset-fill" src="images/boards/thumbnails/shell-heart-kakao.png" alt="" loading="lazy">
-                                <div class="example-tag-final">M01</div>
-                            </div>
-                            <div class="example-label-out">배경 교체</div>
-                        </div>
-
-                        <!-- Row 3: Body Vinyl + Evening Glow Balm -->
-                        <div class="example-cell">
-                            <div class="example-mini-canvas studio">
-                                <img class="example-asset asset-pos-2" src="images/boards/package/perfumebalmminicase-front.png" alt="" loading="lazy">
-                                <img class="example-asset asset-pos-3 asset-small" src="images/boards/product/eveningglow-balm.png" alt="" loading="lazy">
-                            </div>
-                            <div class="example-label-out">케이스 + 제품</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas plain">
-                                <img class="example-asset asset-center" src="images/boards/package/perfumebalmminicase-front.png" alt="" loading="lazy">
-                            </div>
-                            <div class="example-label-out">Mini Case 누끼</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas ref-soft"></div>
-                            <div class="example-label-out">미니멀 룸</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas">
-                                <img class="example-asset asset-fill" src="images/boards/thumbnails/eveningglow-vynil-case-2.png" alt="" loading="lazy">
-                                <div class="example-tag-final">M05</div>
-                            </div>
-                            <div class="example-label-out">스튜디오 합성</div>
-                        </div>
-
-                        <!-- Row 4: Hand Wash solid color background -->
-                        <div class="example-cell">
-                            <div class="example-mini-canvas solid-mint">
-                                <img class="example-asset asset-center" src="images/boards/product/blue-hinoki-showery-body-wash-shadow.png" alt="" loading="lazy">
-                            </div>
-                            <div class="example-label-out">제품 + 단일색상</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas plain">
-                                <img class="example-asset asset-center" src="images/boards/product/blue-hinoki-showery-body-wash-shadow.png" alt="" loading="lazy">
-                            </div>
-                            <div class="example-label-out">Blue Hinoki 누끼</div>
-                        </div>
-                        <div class="example-cell example-na">
-                            <span>—</span>
-                            <div class="example-label-out">레퍼런스 불필요</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas">
-                                <img class="example-asset asset-fill" src="images/boards/thumbnails/handemulsion-summertails-white.png" alt="" loading="lazy">
-                                <div class="example-tag-final">M02</div>
-                            </div>
-                            <div class="example-label-out">배경 컬러</div>
-                        </div>
-
-                        <!-- Row 5: Comb set creative -->
-                        <div class="example-cell">
-                            <div class="example-mini-canvas studio">
-                                <img class="example-asset asset-center" src="images/boards/product/comb-set.png" alt="" loading="lazy">
-                            </div>
-                            <div class="example-label-out">크리에이티브</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas plain">
-                                <img class="example-asset asset-center" src="images/boards/product/comb-set.png" alt="" loading="lazy">
-                            </div>
-                            <div class="example-label-out">Comb Set 누끼</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas ref-pink"></div>
-                            <div class="example-label-out">자유 무드</div>
-                        </div>
-                        <div class="example-cell">
-                            <div class="example-mini-canvas">
-                                <img class="example-asset asset-fill" src="images/boards/thumbnails/body-vinyl-edit-2.png" alt="" loading="lazy">
-                                <div class="example-tag-final">M06</div>
-                            </div>
-                            <div class="example-label-out">크리에이티브</div>
-                        </div>
+                    <div class="examples-photo-stack">
+                        <figure class="examples-photo">
+                            <img src="images/examples/guide-table-1.png" alt="Evening Glow · CHAMO 시리즈 예시 표" loading="lazy">
+                            <figcaption>EG SHELL · CHAMO 시리즈</figcaption>
+                        </figure>
+                        <figure class="examples-photo">
+                            <img src="images/examples/guide-table-2.png" alt="Summer Tails · TAMBURINS 패키지 시리즈 예시 표" loading="lazy">
+                            <figcaption>SUMMER TAILS · TAMBURINS 패키지 시리즈</figcaption>
+                        </figure>
                     </div>
 
                     <div class="example-hint">
                         <span class="example-hint-icon">💡</span>
-                        <span>지금 바로 캔버스 보드에서 직접 시도해보세요. 자산은 모두 Asset Browser에서 가져올 수 있습니다.</span>
+                        <span>각 행을 그대로 따라 배치하면 비슷한 결과를 얻습니다. 가이드 보드(누끼 배치)와 배경 레퍼런스 한 장 → 최종본까지의 흐름을 참고하세요.</span>
                     </div>
                 </div>
             </div>

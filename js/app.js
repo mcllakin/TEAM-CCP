@@ -721,39 +721,56 @@ function initAspectDropdown() {
     const current = document.getElementById('aspect-current');
     if (!trigger || !menu || !dropdown || !current) return;
 
+    let isOpen = false;
+    let overlay = null;
+
     function closeMenu() {
+        if (!isOpen) return;
+        isOpen = false;
         menu.hidden = true;
         dropdown.classList.remove('open');
-    }
-    function openMenu() {
-        menu.hidden = false;
-        dropdown.classList.add('open');
-    }
-    function toggleMenu() {
-        if (menu.hidden) openMenu();
-        else closeMenu();
+        if (overlay && overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+            overlay = null;
+        }
     }
 
-    // Use mousedown — runs before click, lets us stop propagation
-    // to the outside-click handler reliably
+    function openMenu() {
+        if (isOpen) return;
+        isOpen = true;
+        menu.hidden = false;
+        dropdown.classList.add('open');
+
+        // Create transparent overlay that catches all outside clicks.
+        // This works around any stopPropagation issues in the rest of the app.
+        overlay = document.createElement('div');
+        overlay.className = 'dropdown-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:25;background:transparent;cursor:default;';
+        overlay.addEventListener('mousedown', (e) => {
+            // Click is outside the dropdown — close it
+            e.preventDefault();
+            closeMenu();
+        });
+        document.body.appendChild(overlay);
+
+        // Prevent menu-area mousedown from propagating anywhere
+        menu.addEventListener('mousedown', stopProp);
+    }
+    function stopProp(e) { e.stopPropagation(); }
+
+    function toggleMenu() {
+        if (isOpen) closeMenu();
+        else openMenu();
+    }
+
+    // Trigger toggles. Use mousedown for faster response.
     trigger.addEventListener('mousedown', (e) => {
         e.preventDefault();
         e.stopPropagation();
         toggleMenu();
     });
 
-    // Outside click — uses pointerdown for instant response,
-    // capture phase to catch before any inner stopPropagation
-    document.addEventListener('pointerdown', (e) => {
-        if (menu.hidden) return;
-        if (dropdown.contains(e.target)) return;
-        closeMenu();
-    }, true);
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !menu.hidden) closeMenu();
-    });
-
+    // Menu items - explicit close on selection
     document.querySelectorAll('.aspect-item').forEach(item => {
         item.addEventListener('mousedown', (e) => {
             e.preventDefault();
@@ -767,6 +784,11 @@ function initAspectDropdown() {
             closeMenu();
             updateCanvasStatus();
         });
+    });
+
+    // Escape closes
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isOpen) closeMenu();
     });
 }
 
@@ -885,9 +907,10 @@ function computeAlphaBBox(src) {
                 // No alpha at all (opaque image) — selection box = full image
                 if (!hasAlpha || maxX < 0) { resolve(null); return; }
 
-                // Pad slightly (2% of dimensions)
-                const padX = W * 0.015;
-                const padY = H * 0.015;
+                // Pad more generously so handles sit outside the product itself
+                // (5% of dimensions) — gives drag area inside the product
+                const padX = W * 0.05;
+                const padY = H * 0.05;
                 resolve({
                     left:   Math.max(0, (minX - padX) / W),
                     top:    Math.max(0, (minY - padY) / H),
@@ -1002,8 +1025,9 @@ function attachItemInteractions(el, item) {
         function onMove(ev) {
             const dx = ((ev.clientX - startX) / stageRect.width) * 100;
             const dy = ((ev.clientY - startY) / stageRect.height) * 100;
-            item.xPct = Math.max(-20, Math.min(110 - item.wPct, startXPct + dx));
-            item.yPct = Math.max(-20, Math.min(110 - item.hPct, startYPct + dy));
+            // Allow items to go well past canvas edges (designers often crop products at edges)
+            item.xPct = Math.max(-item.wPct + 5, Math.min(100 - 5, startXPct + dx));
+            item.yPct = Math.max(-item.hPct + 5, Math.min(100 - 5, startYPct + dy));
             const liveEl = stage.querySelector(`[data-item-id="${item.id}"]`);
             if (liveEl) {
                 liveEl.style.left = `${item.xPct}%`;
