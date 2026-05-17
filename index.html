@@ -404,22 +404,105 @@
                 </div>
 
                 <div class="overview-tab-panel" data-overview-panel="examples" hidden>
-                    <p class="overview-examples-intro">실제로 만든 무드컷 예시 표. 가이드 보드에 어떤 자산을 어떻게 배치했고, 어떤 배경 레퍼런스 한 장으로 어떤 최종본이 나왔는지 한 번에 확인하실 수 있습니다.</p>
+                    <p class="overview-examples-intro">실제로 만든 무드컷 5개의 케이스. 각 행은 <strong>가이드 보드(누끼 배치) → 누끼 자산 → 배경 레퍼런스 한 장 → 최종본</strong> 흐름. 각 행을 그대로 따라 배치하면 비슷한 결과를 얻습니다.</p>
 
-                    <div class="examples-photo-stack">
-                        <figure class="examples-photo">
-                            <img src="images/examples/guide-table-1.png" alt="Evening Glow · CHAMO 시리즈 예시 표" loading="lazy">
-                            <figcaption>EG SHELL · CHAMO 시리즈</figcaption>
-                        </figure>
-                        <figure class="examples-photo">
-                            <img src="images/examples/guide-table-2.png" alt="Summer Tails · TAMBURINS 패키지 시리즈 예시 표" loading="lazy">
-                            <figcaption>SUMMER TAILS · TAMBURINS 패키지 시리즈</figcaption>
-                        </figure>
+                    <div class="examples-table">
+                        <!-- Header row -->
+                        <div class="ex-header-row">
+                            <div class="ex-row-label-spacer"></div>
+                            <div class="ex-h">가이드 보드</div>
+                            <div class="ex-h-arrow">→</div>
+                            <div class="ex-h">누끼 / 에셋</div>
+                            <div class="ex-h-arrow">+</div>
+                            <div class="ex-h">배경 레퍼런스</div>
+                            <div class="ex-h-arrow">=</div>
+                            <div class="ex-h ex-h-final">최종본</div>
+                        </div>
+
+                        <!-- Row 1: Summer Tails Key Comb -->
+                        <div class="ex-row">
+                            <div class="ex-row-label">
+                                <span class="ex-row-num">01</span>
+                                <span class="ex-row-title">Summer Tails<br>키 콤브</span>
+                                <span class="ex-row-mode">M05 · 스튜디오</span>
+                            </div>
+                            <div class="ex-cell ex-cell-board"><img src="images/examples/r1-board.png" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">→</div>
+                            <div class="ex-cell"><img src="images/examples/r1-asset.png" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">+</div>
+                            <div class="ex-cell"><img src="images/examples/r1-bg.png" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">=</div>
+                            <div class="ex-cell ex-cell-final"><img src="images/examples/r1-final.png" alt="" loading="lazy"></div>
+                        </div>
+
+                        <!-- Row 2: TAMBURINS White Bag + Brown Box - Kitchen -->
+                        <div class="ex-row">
+                            <div class="ex-row-label">
+                                <span class="ex-row-num">02</span>
+                                <span class="ex-row-title">화이트 백 +<br>갈색 박스</span>
+                                <span class="ex-row-mode">M01 · 배경 교체</span>
+                            </div>
+                            <div class="ex-cell ex-cell-board"><img src="images/examples/r2-board.png" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">→</div>
+                            <div class="ex-cell"><img src="images/examples/r2-board.png" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">+</div>
+                            <div class="ex-cell"><img src="images/examples/r2-bg.jpg" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">=</div>
+                            <div class="ex-cell ex-cell-final"><img src="images/examples/r2-final.png" alt="" loading="lazy"></div>
+                        </div>
+
+                        <!-- Row 3: Same bag + Green Tile -->
+                        <div class="ex-row">
+                            <div class="ex-row-label">
+                                <span class="ex-row-num">03</span>
+                                <span class="ex-row-title">화이트 백 +<br>그린 타일</span>
+                                <span class="ex-row-mode">M01 · 배경 교체</span>
+                            </div>
+                            <div class="ex-cell ex-cell-board"><img src="images/examples/r2-board.png" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">→</div>
+                            <div class="ex-cell"><img src="images/examples/r2-board.png" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">+</div>
+                            <div class="ex-cell"><img src="images/examples/r3-bg.jpg" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">=</div>
+                            <div class="ex-cell ex-cell-final"><img src="images/examples/r3-final.jpg" alt="" loading="lazy"></div>
+                        </div>
+
+                        <!-- Row 4: Same bag + Beige Texture -->
+                        <div class="ex-row">
+                            <div class="ex-row-label">
+                                <span class="ex-row-num">04</span>
+                                <span class="ex-row-title">화이트 백 +<br>베이지 무드</span>
+                                <span class="ex-row-mode">M05 · 스튜디오</span>
+                            </div>
+                            <div class="ex-cell ex-cell-board"><img src="images/examples/r2-board.png" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">→</div>
+                            <div class="ex-cell"><img src="images/examples/r2-board.png" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">+</div>
+                            <div class="ex-cell"><img src="images/examples/r4-bg.jpg" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">=</div>
+                            <div class="ex-cell ex-cell-final"><img src="images/examples/r4-final.png" alt="" loading="lazy"></div>
+                        </div>
+
+                        <!-- Row 5: CHAMO Key Pkg + Pink Tile -->
+                        <div class="ex-row">
+                            <div class="ex-row-label">
+                                <span class="ex-row-num">05</span>
+                                <span class="ex-row-title">CHAMO<br>키 패키지</span>
+                                <span class="ex-row-mode">M06 · 크리에이티브</span>
+                            </div>
+                            <div class="ex-cell ex-cell-board"><img src="images/examples/r5-board.png" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">→</div>
+                            <div class="ex-cell"><img src="images/examples/r5-board.png" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">+</div>
+                            <div class="ex-cell"><img src="images/examples/r5-bg.jpg" alt="" loading="lazy"></div>
+                            <div class="ex-arrow">=</div>
+                            <div class="ex-cell ex-cell-final"><img src="images/examples/r5-final.png" alt="" loading="lazy"></div>
+                        </div>
                     </div>
 
                     <div class="example-hint">
                         <span class="example-hint-icon">💡</span>
-                        <span>각 행을 그대로 따라 배치하면 비슷한 결과를 얻습니다. 가이드 보드(누끼 배치)와 배경 레퍼런스 한 장 → 최종본까지의 흐름을 참고하세요.</span>
+                        <span>가이드 보드는 캔버스 보드에서 자산을 그대로 배치해 만들 수 있고, 배경 레퍼런스는 모드 02·05 / 직접 업로드로 사용합니다. 모드별 마스터 프롬프트가 적용되어 IIC 미학 톤으로 변환됩니다.</span>
                     </div>
                 </div>
             </div>

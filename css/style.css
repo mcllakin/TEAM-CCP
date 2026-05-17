@@ -746,14 +746,11 @@ body {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 1;
-    transition: opacity 0.6s ease;
+    z-index: 3;
+    transition: opacity 0.4s ease;
 }
 
-.canvas-hint-labels.faded {
-    opacity: 0;
-}
-
+/* Hide once user has items on canvas (visual context is now obvious) */
 .studio-stage[data-bg="solid"] .canvas-hint-labels {
     display: none;
 }
@@ -762,31 +759,60 @@ body {
     opacity: 0;
 }
 
+/* localStorage-driven fade — only after first item add */
+.canvas-hint-labels.faded {
+    opacity: 0.4;  /* keep dim hint, not fully gone */
+}
+
 .canvas-hint-label {
     position: absolute;
     font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1.2px;
-    padding: 4px 8px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    padding: 5px 10px;
     border-radius: var(--r-full);
     text-transform: uppercase;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.canvas-hint-label::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
 }
 
 .canvas-hint-label.hint-wall {
-    top: 14px;
-    left: 14px;
-    background: rgba(0, 0, 0, 0.04);
-    color: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    top: 16px;
+    left: 16px;
+    background: rgba(255, 255, 255, 0.85);
+    color: rgba(0, 0, 0, 0.65);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.canvas-hint-label.hint-wall::before {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
 .canvas-hint-label.hint-floor {
-    bottom: 14px;
-    left: 14px;
-    background: rgba(255, 255, 255, 0.4);
-    color: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    bottom: 16px;
+    left: 16px;
+    background: rgba(40, 40, 45, 0.78);
+    color: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.canvas-hint-label.hint-floor::before {
+    background: #b8b8b8;
+    border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 .canvas-hint {
@@ -2210,39 +2236,131 @@ body {
     letter-spacing: 0.3px;
 }
 
-/* Examples photo stack — user-provided guide tables */
-.examples-photo-stack {
+/* Examples table — 5 rows × (board → asset → bg → final) with arrows */
+.examples-table {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 14px;
     margin-bottom: 20px;
 }
 
-.examples-photo {
-    margin: 0;
-    background: var(--surface-elevated);
-    border: 1px solid var(--hair-dark);
-    border-radius: var(--r-md);
-    overflow: hidden;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+.ex-header-row {
+    display: grid;
+    grid-template-columns: 100px 1fr 24px 1fr 24px 1fr 24px 1fr;
+    gap: 8px;
+    padding: 0 4px 8px;
+    border-bottom: 1px solid var(--hair-dark);
 }
 
-.examples-photo img {
+.ex-row-label-spacer { }
+
+.ex-h {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--on-dark-mute);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 2px 0;
+}
+
+.ex-h-final { color: var(--on-dark); }
+
+.ex-h-arrow {
+    color: var(--on-dark-faint);
+    text-align: center;
+    font-size: 14px;
+    align-self: center;
+}
+
+.ex-row {
+    display: grid;
+    grid-template-columns: 100px 1fr 24px 1fr 24px 1fr 24px 1fr;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.ex-row-label {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 8px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--hair-dark);
+    border-radius: var(--r-sm);
+}
+
+.ex-row-num {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--on-dark-faint);
+    letter-spacing: 1.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.ex-row-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--on-dark);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+}
+
+.ex-row-mode {
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--accent-info, #6b9eff);
+    letter-spacing: 0.3px;
+    margin-top: 2px;
+}
+
+.ex-cell {
+    aspect-ratio: 1;
+    background: var(--surface-deep);
+    border: 1px solid var(--hair-dark);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    position: relative;
+}
+
+.ex-cell img {
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover;
     display: block;
 }
 
-.examples-photo figcaption {
-    padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.03);
-    color: var(--on-dark-mute);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    border-top: 1px solid var(--hair-dark);
+.ex-cell-final {
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 }
+
+.ex-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--on-dark-faint);
+    font-size: 16px;
+    font-weight: 400;
+}
+
+/* Mobile responsive — stack rows */
+@media (max-width: 820px) {
+    .ex-header-row, .ex-row {
+        grid-template-columns: 80px 1fr 1fr 1fr 1fr;
+    }
+    .ex-h-arrow, .ex-arrow {
+        display: none;
+    }
+    .ex-row-label { padding: 6px; }
+    .ex-row-title { font-size: 10.5px; }
+    .ex-row-mode { font-size: 8.5px; }
+    .ex-h { font-size: 9px; letter-spacing: 0.8px; }
+}
+
+/* Old photo-stack — kept as fallback, hidden when table present */
+.examples-photo-stack { display: none; }
 
 .example-hint {
     display: flex;

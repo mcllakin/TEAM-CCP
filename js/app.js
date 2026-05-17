@@ -342,13 +342,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateDock();
     updateAutoNamePreview();
 
-    // Hide canvas hint labels if user has used canvas before
-    try {
-        if (localStorage.getItem('iic_canvas_used')) {
-            const hint = document.getElementById('canvas-hint-labels');
-            if (hint) hint.classList.add('faded');
-        }
-    } catch (_) {}
+    // Canvas hint labels (wall/floor) — always visible when canvas is empty.
+    // CSS handles fade-out via .has-items class when items are added.
 
     // First-visit overview modal
     try {
@@ -722,17 +717,37 @@ function initAspectDropdown() {
     if (!trigger || !menu || !dropdown || !current) return;
 
     let isOpen = false;
-    let overlay = null;
+    let outsideListener = null;
+
+    function attachOutsideListener() {
+        // Re-register a once-only outside-click listener.
+        // Using setTimeout(0) ensures the current click event is fully
+        // processed before this listener is bound — so it can never
+        // catch the very click that opened the menu.
+        outsideListener = (e) => {
+            // If click is inside menu or trigger, don't close — re-register
+            if (menu.contains(e.target) || trigger.contains(e.target)) {
+                setTimeout(attachOutsideListener, 0);
+                return;
+            }
+            closeMenu();
+        };
+        window.addEventListener('click', outsideListener, { once: true });
+    }
+
+    function detachOutsideListener() {
+        if (outsideListener) {
+            window.removeEventListener('click', outsideListener);
+            outsideListener = null;
+        }
+    }
 
     function closeMenu() {
         if (!isOpen) return;
         isOpen = false;
         menu.hidden = true;
         dropdown.classList.remove('open');
-        if (overlay && overlay.parentNode) {
-            overlay.parentNode.removeChild(overlay);
-            overlay = null;
-        }
+        detachOutsideListener();
     }
 
     function openMenu() {
@@ -740,39 +755,22 @@ function initAspectDropdown() {
         isOpen = true;
         menu.hidden = false;
         dropdown.classList.add('open');
-
-        // Create transparent overlay that catches all outside clicks.
-        // This works around any stopPropagation issues in the rest of the app.
-        overlay = document.createElement('div');
-        overlay.className = 'dropdown-overlay';
-        overlay.style.cssText = 'position:fixed;inset:0;z-index:25;background:transparent;cursor:default;';
-        overlay.addEventListener('mousedown', (e) => {
-            // Click is outside the dropdown — close it
-            e.preventDefault();
-            closeMenu();
-        });
-        document.body.appendChild(overlay);
-
-        // Prevent menu-area mousedown from propagating anywhere
-        menu.addEventListener('mousedown', stopProp);
-    }
-    function stopProp(e) { e.stopPropagation(); }
-
-    function toggleMenu() {
-        if (isOpen) closeMenu();
-        else openMenu();
+        setTimeout(attachOutsideListener, 0);
     }
 
-    // Trigger toggles. Use mousedown for faster response.
-    trigger.addEventListener('mousedown', (e) => {
+    // Trigger toggles — handle with stopPropagation so outside-listener
+    // doesn't see this click (we use click, not mousedown, so it pairs
+    // properly with window.click)
+    trigger.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        toggleMenu();
+        if (isOpen) closeMenu();
+        else openMenu();
     });
 
-    // Menu items - explicit close on selection
+    // Menu items select + close
     document.querySelectorAll('.aspect-item').forEach(item => {
-        item.addEventListener('mousedown', (e) => {
+        item.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             const aspect = item.dataset.aspect;
@@ -857,12 +855,7 @@ function addCanvasItem(asset) {
         }
     }).catch(() => {});
 
-    // Auto-hide canvas hint after first item added
-    try {
-        localStorage.setItem('iic_canvas_used', '1');
-        const hint = document.getElementById('canvas-hint-labels');
-        if (hint) hint.classList.add('faded');
-    } catch (_) {}
+    // Canvas hint labels auto-fade via CSS .has-items selector — no JS needed
 }
 
 /**
