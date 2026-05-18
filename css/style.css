@@ -399,6 +399,11 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    /* Both panels lock to same height — browser content scrolls internally
+     * so canvas size stays stable regardless of how many assets are in the
+     * current category */
+    height: min(820px, calc(100vh - 120px));
+    max-height: 820px;
 }
 
 .studio-panel-header {
@@ -536,6 +541,17 @@ body {
     position: relative;
 }
 
+/* Hide native <details> marker */
+.aspect-dropdown summary {
+    list-style: none;
+}
+.aspect-dropdown summary::-webkit-details-marker {
+    display: none;
+}
+.aspect-dropdown summary::marker {
+    display: none;
+}
+
 .aspect-trigger {
     display: inline-flex;
     align-items: center;
@@ -553,11 +569,13 @@ body {
     transition: border-color var(--t);
     min-width: 78px;
     justify-content: space-between;
+    user-select: none;
 }
 
 .aspect-trigger:hover { border-color: var(--hair-strong); }
 
 .aspect-trigger svg { opacity: 0.6; transition: transform var(--t); }
+.aspect-dropdown[open] .aspect-trigger svg,
 .aspect-dropdown.open .aspect-trigger svg { transform: rotate(180deg); }
 
 .aspect-menu {
@@ -958,7 +976,7 @@ body {
 
 /* ----- Browser ----- */
 .studio-browser-panel {
-    min-height: 460px;
+    /* height controlled by .studio-canvas-panel,.studio-browser-panel rule above */
 }
 
 .browser-tabs {

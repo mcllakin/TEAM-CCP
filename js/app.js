@@ -10,6 +10,23 @@ const JPEG_QUALITY = 0.9;
 // ============================================================
 // MODE DEFINITIONS — prompts adapted from IIC AI PROMPT Notion
 // ============================================================
+// MODE DEFINITIONS — prompts adapted from IIC AI PROMPT Notion
+// Master prompts for Nano Banana Pro
+//
+// BRAND_VOICE prepended to every prompt to anchor the model in
+// TAMBURINS aesthetic. Source: https://www.tamburins.com/kr/
+// ============================================================
+
+const BRAND_VOICE = `Brand Anchor — TAMBURINS:
+TAMBURINS is a Korean perfume brand operated by IIC (아이아이컴바인드), exploring "undefined beauty."
+Aesthetic: editorial, minimal, sculptural, gallery-like. Soft luxurious materials (matte glass, brushed metal, satin ribbon, paper texture, suede, marble).
+Color palette: muted naturals, dusty pastels (mint, blush, sand, soft gray), warm beige, deep brown, ivory.
+Mood: quiet, refined, slightly poetic — never loud, never cute, never childish.
+Collections: SUMMER TAILS (hair perfume + key comb), SUNSHINE (perfume hand + body), BLUE HINOKI (woody/musk), BOTTARI (perfume), EVENING GLOW (perfume hand shell).
+Categories: Perfume, Hair perfume, Perfume balm, Perfume oil, Shell perfume hand, Egg lipbalm, Chain hand, Showery body, Car diffuser, Room fragrance, Perfume candle.
+
+`;
+
 const MODES = {
     'bg-replace': {
         id: 'bg-replace', label: '배경 교체', num: '01',
@@ -710,83 +727,53 @@ function initCanvas() {
 
 // Aspect dropdown
 function initAspectDropdown() {
-    const trigger = document.getElementById('aspect-trigger');
+    const dropdown = document.getElementById('aspect-dropdown');  // <details>
+    const trigger = document.getElementById('aspect-trigger');    // <summary>
     const menu = document.getElementById('aspect-menu');
-    const dropdown = document.getElementById('aspect-dropdown');
     const current = document.getElementById('aspect-current');
-    if (!trigger || !menu || !dropdown || !current) return;
-
-    let isOpen = false;
-    let outsideListener = null;
-
-    function attachOutsideListener() {
-        // Re-register a once-only outside-click listener.
-        // Using setTimeout(0) ensures the current click event is fully
-        // processed before this listener is bound — so it can never
-        // catch the very click that opened the menu.
-        outsideListener = (e) => {
-            // If click is inside menu or trigger, don't close — re-register
-            if (menu.contains(e.target) || trigger.contains(e.target)) {
-                setTimeout(attachOutsideListener, 0);
-                return;
-            }
-            closeMenu();
-        };
-        window.addEventListener('click', outsideListener, { once: true });
+    if (!dropdown || !trigger || !menu || !current) {
+        console.warn('[ASPECT] elements missing');
+        return;
     }
+    console.log('[ASPECT] init with <details>');
 
-    function detachOutsideListener() {
-        if (outsideListener) {
-            window.removeEventListener('click', outsideListener);
-            outsideListener = null;
+    // Native <details> handles open/close. We just need:
+    // 1. Outside-click to close (native doesn't do this)
+    // 2. Item selection closes
+    // 3. ESC to close
+
+    // Outside click — capture phase mousedown
+    document.addEventListener('mousedown', (e) => {
+        if (!dropdown.open) return;
+        if (dropdown.contains(e.target)) return;
+        dropdown.removeAttribute('open');
+    }, true);
+
+    // ESC key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && dropdown.open) {
+            dropdown.removeAttribute('open');
         }
-    }
-
-    function closeMenu() {
-        if (!isOpen) return;
-        isOpen = false;
-        menu.hidden = true;
-        dropdown.classList.remove('open');
-        detachOutsideListener();
-    }
-
-    function openMenu() {
-        if (isOpen) return;
-        isOpen = true;
-        menu.hidden = false;
-        dropdown.classList.add('open');
-        setTimeout(attachOutsideListener, 0);
-    }
-
-    // Trigger toggles — handle with stopPropagation so outside-listener
-    // doesn't see this click (we use click, not mousedown, so it pairs
-    // properly with window.click)
-    trigger.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (isOpen) closeMenu();
-        else openMenu();
     });
 
-    // Menu items select + close
+    // Item selection
     document.querySelectorAll('.aspect-item').forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
-            e.stopPropagation();
             const aspect = item.dataset.aspect;
             state.canvas.aspect = aspect;
             current.textContent = aspect;
             document.querySelectorAll('.aspect-item').forEach(i => i.classList.toggle('active', i === item));
             const stage = document.getElementById('canvas-stage');
             if (stage) stage.setAttribute('data-aspect', aspect);
-            closeMenu();
+            dropdown.removeAttribute('open');
             updateCanvasStatus();
         });
     });
 
-    // Escape closes
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && isOpen) closeMenu();
+    // Sync .open class with [open] attribute for CSS chevron rotation
+    dropdown.addEventListener('toggle', () => {
+        dropdown.classList.toggle('open', dropdown.open);
     });
 }
 
@@ -1452,7 +1439,7 @@ async function generateImages() {
             colorDescription: state.color.description
         };
 
-        const prompt = mode.buildPrompt(ctx);
+        const prompt = BRAND_VOICE + mode.buildPrompt(ctx);
 
         setLoadingSubtext('자산 준비 중...');
         const productDataUrl = product ? await ensureDataUrl(product.dataUrl) : null;

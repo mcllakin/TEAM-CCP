@@ -140,6 +140,20 @@
         "thumbnail": "/images/boards/product/ohand.png",
         "dataUrl": "/images/boards/product/ohand.png",
         "transparent": true
+      },
+      {
+        "id": "eveningglow-30ml-shell",
+        "label": "EveningGlow 30ml Shell",
+        "thumbnail": "/images/boards/product/eveningglow-30ml-shell.png",
+        "dataUrl": "/images/boards/product/eveningglow-30ml-shell.png",
+        "transparent": true
+      },
+      {
+        "id": "eveningglow-15ml-shell",
+        "label": "EveningGlow 15ml Shell",
+        "thumbnail": "/images/boards/product/eveningglow-15ml-shell.png",
+        "dataUrl": "/images/boards/product/eveningglow-15ml-shell.png",
+        "transparent": true
       }
     ],
     "product-draft": [],
